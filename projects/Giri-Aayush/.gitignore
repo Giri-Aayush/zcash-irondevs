@@ -1,0 +1,12 @@
+# regenerated data & caches — never committed
+data/
+.cache/
+.venv/
+__pycache__/
+*.pyc
+
+# web/graph.json IS committed so the visualization works out-of-the-box;
+# the pipeline regenerates it against the judge's full mirror on re-run.
+
+# python build artifacts
+*.egg-info/

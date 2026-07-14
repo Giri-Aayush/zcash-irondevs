@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ten Years of Zcash · Dynamic Co-Authorship Network</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body data-palette="#3987e5,#199e70,#c98500,#9085e9,#e66767,#d95926,#d55181,#33b1a6">
+  <div id="app">
+    <!-- ─────────────  Sidebar  ───────────── -->
+    <aside id="sidebar">
+      <header class="brand">
+        <div class="brand-mark">◈</div>
+        <div>
+          <span class="eyebrow">2015 — 2026 · Irondevs</span>
+          <h1>Ten Years of Zcash</h1>
+          <p class="subtitle">Dynamic co-authorship network of the ecosystem</p>
+        </div>
+      </header>
+
+      <section class="story" id="story">
+        <p>Every dot is a <strong>person</strong>; a line joins two who built in the
+        same repo. Press <em>play</em> to watch a decade assemble, commit by commit.</p>
+      </section>
+
+      <section class="panel">
+        <h2>Color by</h2>
+        <div class="segmented" id="color-by">
+          <button data-val="community" class="on">Community</button>
+          <button data-val="org">Organization</button>
+        </div>
+        <div class="legend" id="legend"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Controls</h2>
+        <label class="control">
+          <span>Node size</span>
+          <select id="size-by">
+            <option value="commits">Commits</option>
+            <option value="degree">Collaborators</option>
+            <option value="betweenness">Betweenness</option>
+          </select>
+        </label>
+        <label class="control">
+          <span>Min. tie strength <b id="minw-val">1</b></span>
+          <input type="range" id="minw" min="1" max="20" value="1" />
+        </label>
+        <label class="control checkbox">
+          <input type="checkbox" id="show-bots" />
+          <span>Show bots &amp; automation</span>
+        </label>
+        <label class="control">
+          <span>Find a contributor</span>
+          <input type="search" id="search" placeholder="e.g. Daira, Teor, str4d…" autocomplete="off" />
+          <div id="search-results"></div>
+        </label>
+      </section>
+
+      <section class="panel metrics">
+        <h2>Network at <span id="metric-month">—</span></h2>
+        <div class="metric-grid">
+          <div><b id="m-nodes">0</b><span>people</span></div>
+          <div><b id="m-edges">0</b><span>ties</span></div>
+          <div><b id="m-commits">0</b><span>commits</span></div>
+          <div><b id="m-density">0</b><span>density</span></div>
+        </div>
+        <svg id="growth" viewBox="0 0 240 44" preserveAspectRatio="none"></svg>
+      </section>
+
+      <footer class="credits">
+        <span id="meta-line">—</span>
+        <a href="https://github.com/jenkin/zcash-irondevs" target="_blank" rel="noopener">Irondevs contest</a>
+      </footer>
+    </aside>
+
+    <!-- ─────────────  Graph stage  ───────────── -->
+    <main id="stage">
+      <svg id="graph"></svg>
+      <div id="tooltip" class="tooltip" hidden></div>
+      <div id="node-card" class="node-card" hidden></div>
+      <div class="stage-hint" id="hint">Drag to pan · scroll to zoom · hover a node</div>
+    </main>
+  </div>
+
+  <!-- ─────────────  Timeline  ───────────── -->
+  <div id="timeline">
+    <button id="play" class="play" aria-label="Play">▶</button>
+    <div class="tl-track-wrap">
+      <div class="tl-months" id="tl-month">2015 · Dec</div>
+      <svg id="tl-track" preserveAspectRatio="none"></svg>
+      <input type="range" id="scrub" min="0" max="1" value="1" step="1" />
+      <div class="tl-annotations" id="tl-annotations"></div>
+    </div>
+    <div class="tl-mode">
+      <div class="segmented" id="mode">
+        <button data-val="cumulative" class="on">Cumulative</button>
+        <button data-val="window">Window</button>
+      </div>
+      <label class="win-ctl" id="win-ctl" hidden>
+        <span id="win-val">12</span>mo
+        <input type="range" id="win" min="1" max="36" value="12" />
+      </label>
+    </div>
+  </div>
+
+  <script src="lib/d3.v7.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
