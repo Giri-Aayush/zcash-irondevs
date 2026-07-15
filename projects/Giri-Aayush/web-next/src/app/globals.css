@@ -59,6 +59,61 @@
   --input: rgba(255, 255, 255, 0.09);
   --ring: rgba(244, 183, 40, 0.5);
   --radius: 0.6rem;
+
+  /* floating glass surface */
+  --glass-bg: rgba(13, 17, 27, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.07);
+  --glass-highlight: rgba(255, 255, 255, 0.05);
+  --glass-shadow: rgba(0, 0, 0, 0.8);
+
+  /* graph ink (SVG links + labels) */
+  --graph-link: #4a5573;
+  --graph-ink: #c9c3b6;         /* resting node labels */
+  --graph-ink-strong: #ede7dc;  /* focused label */
+  --graph-ink-halo: #090d16;    /* label outline = canvas */
+  --grid-line: rgba(120, 140, 190, 0.06);
+
+  --ambient-1: rgba(90, 110, 180, 0.1);
+  --ambient-2: rgba(244, 183, 40, 0.05);
+}
+
+/* ── daylight: a clean, paper-bright control surface ── */
+:root[data-theme="light"] {
+  --canvas: #eceef3;
+  --gold: #b5820f;
+  --hairline: rgba(15, 23, 42, 0.08);
+
+  --background: #eceef3;
+  --foreground: #14181f;
+  --card: rgba(255, 255, 255, 0.85);
+  --card-foreground: #14181f;
+  --popover: #ffffff;
+  --popover-foreground: #14181f;
+  --primary: #b5820f;
+  --primary-foreground: #ffffff;
+  --secondary: rgba(15, 23, 42, 0.05);
+  --secondary-foreground: #14181f;
+  --muted: rgba(15, 23, 42, 0.05);
+  --muted-foreground: rgba(20, 24, 31, 0.55);
+  --accent: rgba(181, 130, 15, 0.14);
+  --accent-foreground: #8a6209;
+  --border: rgba(15, 23, 42, 0.1);
+  --input: rgba(15, 23, 42, 0.12);
+  --ring: rgba(181, 130, 15, 0.5);
+
+  --glass-bg: rgba(255, 255, 255, 0.78);
+  --glass-border: rgba(15, 23, 42, 0.08);
+  --glass-highlight: rgba(255, 255, 255, 0.9);
+  --glass-shadow: rgba(30, 41, 79, 0.18);
+
+  --graph-link: #9aa6c2;
+  --graph-ink: #3a4256;
+  --graph-ink-strong: #14181f;
+  --graph-ink-halo: #f4f6fa;
+  --grid-line: rgba(40, 60, 110, 0.07);
+
+  --ambient-1: rgba(90, 120, 200, 0.07);
+  --ambient-2: rgba(181, 130, 15, 0.04);
 }
 
 @layer base {
@@ -76,14 +131,14 @@
 @layer utilities {
   /* floating glass panel, the signature surface */
   .glass {
-    background: rgba(13, 17, 27, 0.72);
-    border: 1px solid var(--hairline);
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
     border-radius: 12px;
     backdrop-filter: blur(18px) saturate(1.25);
     -webkit-backdrop-filter: blur(18px) saturate(1.25);
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.05),
-      0 18px 50px -20px rgba(0, 0, 0, 0.8);
+      inset 0 1px 0 var(--glass-highlight),
+      0 18px 50px -20px var(--glass-shadow);
   }
   /* tiny tracked mono label, IBM Plex Mono, uppercase */
   .label {
@@ -111,9 +166,26 @@
 }
 .breathe { animation: breathe 10s ease-in-out infinite; }
 
+/* ambient depth glow, themed so light mode stays clean */
+.ambient {
+  background:
+    radial-gradient(90% 70% at 52% 42%, var(--ambient-1), transparent 60%),
+    radial-gradient(60% 50% at 52% 42%, var(--ambient-2), transparent 65%);
+}
+
 /* ties flow like the monitoring-map arcs (calm, slow) */
 @keyframes flowDash { to { stroke-dashoffset: -16; } }
-.link { stroke-dasharray: 2 7; animation: flowDash 2.1s linear infinite; }
+.link { stroke: var(--graph-link); stroke-dasharray: 2 7; animation: flowDash 2.1s linear infinite; }
+
+/* node labels read their ink + halo from the theme, so a toggle re-colors them live */
+text.whale { fill: var(--graph-ink); stroke: var(--graph-ink-halo); }
+text.lbl { fill: var(--graph-ink-strong); stroke: var(--graph-ink-halo); }
+
+/* re-theme the surfaces and canvas smoothly, not instantly */
+body, .glass, .link, text.whale, text.lbl {
+  transition: background-color 0.45s ease, color 0.45s ease, fill 0.45s ease,
+    stroke 0.45s ease, border-color 0.45s ease, box-shadow 0.45s ease;
+}
 
 /* radar ping emanating from the focused node */
 @keyframes radarPing {

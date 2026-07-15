@@ -3,8 +3,11 @@
 import { create } from "zustand";
 import type { ColorBy, GraphDoc, Mode, SizeBy } from "./graph";
 
+export type Theme = "dark" | "light";
+
 type VizState = {
   data: GraphDoc | null;
+  theme: Theme;
   month: number;
   mode: Mode;
   windowSize: number;
@@ -27,6 +30,7 @@ type VizState = {
 
 export const useViz = create<VizState>((setState, get) => ({
   data: null,
+  theme: "dark",
   month: 0,
   mode: "cumulative",
   windowSize: 12,

@@ -10,6 +10,7 @@ import Timeline from "@/components/Timeline";
 import Tooltip from "@/components/Tooltip";
 import StoryCaption from "@/components/StoryCaption";
 import SelectionCard from "@/components/SelectionCard";
+import ThemeToggle from "@/components/ThemeToggle";
 
 // cinematic rise-and-unblur, spring-settled
 const rise = (dir: "left" | "top" | "bottom", delay: number) => ({
@@ -36,14 +37,7 @@ export default function Home() {
   return (
     <main className="relative h-full w-full overflow-hidden bg-canvas">
       {/* ambient navy + gold glow */}
-      <div
-        className="breathe pointer-events-none absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(90% 70% at 52% 42%, rgba(90,110,180,0.10), transparent 60%)," +
-            "radial-gradient(60% 50% at 52% 42%, rgba(244,183,40,0.05), transparent 65%)",
-        }}
-      />
+      <div className="ambient breathe pointer-events-none absolute inset-0" />
       <div
         className="pointer-events-none absolute inset-0 z-40 opacity-[0.035] mix-blend-soft-light"
         style={{
@@ -73,7 +67,10 @@ export default function Home() {
             <SlidersIcon />
           </motion.button>
 
-          <motion.div {...rise("top", 0.3)}><StatsBar /></motion.div>
+          <div className="flex items-start gap-2 sm:gap-3">
+            <motion.div {...rise("top", 0.3)}><ThemeToggle /></motion.div>
+            <motion.div {...rise("top", 0.36)}><StatsBar /></motion.div>
+          </div>
         </div>
 
         <div className="flex justify-center">

@@ -49,8 +49,8 @@ export default function Timeline() {
         transition={{ type: "spring", stiffness: 500, damping: 20 }}
         className="grid size-10 flex-none place-items-center rounded-full text-[12px] sm:size-11 sm:text-[13px]"
         style={{
-          background: playing ? "rgba(255,255,255,0.06)" : "radial-gradient(circle at 36% 30%, #ffd469, var(--gold))",
-          color: playing ? "#ede7dc" : "#241a00",
+          background: playing ? "var(--secondary)" : "radial-gradient(circle at 36% 30%, #ffd469, var(--gold))",
+          color: playing ? "var(--foreground)" : "#241a00",
           boxShadow: playing ? "none" : "0 4px 18px -4px rgba(244,183,40,0.55)",
         }}
       >
@@ -81,7 +81,7 @@ export default function Timeline() {
               <span
                 key={ym}
                 className="label absolute -translate-x-1/2 whitespace-nowrap"
-                style={{ left: `${(idx / (n - 1)) * 100}%`, top: i % 2 ? 11 : 0, fontSize: "8px", color: "rgba(237,231,220,0.42)" }}
+                style={{ left: `${(idx / (n - 1)) * 100}%`, top: i % 2 ? 11 : 0, fontSize: "8px", color: "var(--muted-foreground)" }}
               >
                 {name}
               </span>
@@ -110,7 +110,7 @@ export default function Timeline() {
           {MILESTONES.map(([ym]) => {
             const idx = months.indexOf(ym);
             if (idx < 0) return null;
-            return <div key={ym} className="absolute bottom-0 h-full w-px bg-white/15" style={{ left: `${(idx / (n - 1)) * 100}%` }} />;
+            return <div key={ym} className="absolute bottom-0 h-full w-px" style={{ left: `${(idx / (n - 1)) * 100}%`, background: "var(--grid-line)" }} />;
           })}
           {/* playhead */}
           <div className="pointer-events-none absolute bottom-0 top-0 w-px bg-gold" style={{ left: `${(month / (n - 1)) * 100}%` }}>
