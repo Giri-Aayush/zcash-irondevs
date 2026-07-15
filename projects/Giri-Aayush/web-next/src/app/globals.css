@@ -111,9 +111,9 @@
 }
 .breathe { animation: breathe 10s ease-in-out infinite; }
 
-/* ties flow like the monitoring-map arcs */
+/* ties flow like the monitoring-map arcs (calm, slow) */
 @keyframes flowDash { to { stroke-dashoffset: -16; } }
-.link { stroke-dasharray: 2.5 6; animation: flowDash 1.2s linear infinite; }
+.link { stroke-dasharray: 2 7; animation: flowDash 2.1s linear infinite; }
 
 /* radar ping emanating from the focused node */
 @keyframes radarPing {
@@ -124,7 +124,7 @@
 
 /* ambient concentric pulse on every connected "station" (like the monitoring map) */
 @keyframes station {
-  0% { transform: scale(1); opacity: 0.5; }
-  70%, 100% { transform: scale(2.3); opacity: 0; }
+  0% { transform: scale(1); opacity: 0.3; }
+  70%, 100% { transform: scale(2.1); opacity: 0; }
 }
-.station { transform-box: fill-box; transform-origin: center; animation: station 3.4s ease-out infinite; will-change: transform, opacity; }
+.station { transform-box: fill-box; transform-origin: center; animation: station 4.8s ease-out infinite; will-change: transform, opacity; }

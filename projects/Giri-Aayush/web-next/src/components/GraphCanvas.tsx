@@ -252,8 +252,8 @@ export default function GraphCanvas() {
         (u: any) => u,
         (exit: any) => exit.remove()
       )
-      .attr("stroke-opacity", 0.34)
-      .attr("stroke-width", (l: GLink) => Math.min(2.4, 0.35 + Math.sqrt(l.w!) * 0.4));
+      .attr("stroke-opacity", 0.2)
+      .attr("stroke-width", (l: GLink) => Math.min(1.6, 0.3 + Math.sqrt(l.w!) * 0.28));
 
     const nodeSel = gNode.selectAll<SVGGElement, GNode>("g.node")
       .data(nodes, (n: any) => n.id)
@@ -288,8 +288,8 @@ export default function GraphCanvas() {
     const T = () => d3.transition().duration(450).ease(d3.easeCubicOut) as any;
     nodeSel.select("circle.halo")
       .attr("fill", (n: GNode) => grads(color(n)).glow)
-      .attr("opacity", (n: GNode) => (conn(n) ? (n.is_bot ? 0.3 : 0.95) : 0)) // muted sea has no glow
-      .transition(T()).attr("r", (n: GNode) => n.r! * 2.1);
+      .attr("opacity", (n: GNode) => (conn(n) ? (n.is_bot ? 0.2 : 0.48) : 0)) // softer glow
+      .transition(T()).attr("r", (n: GNode) => n.r! * 1.85);
     nodeSel.select("circle.body")
       .attr("fill", (n: GNode) => (!conn(n) ? "url(#muted)" : n.avatar ? avatarFill(n) : grads(color(n)).sphere))
       .attr("fill-opacity", (n: GNode) => (!conn(n) ? 0.5 : n.is_bot ? 0.5 : 1))
@@ -309,7 +309,7 @@ export default function GraphCanvas() {
     const stations = new Set(
       nodes.filter((n) => (n.deg || 0) > 0 && !n.is_bot)
         .sort((a, b) => (nodeC.get(b.id) || 0) - (nodeC.get(a.id) || 0))
-        .slice(0, 45).map((n) => n.id)
+        .slice(0, 16).map((n) => n.id)
     );
     gNode.selectAll<SVGGElement, GNode>("g.node").filter((n) => stations.has(n.id))
       .insert("circle", ":first-child").attr("class", "station")
@@ -361,7 +361,7 @@ export default function GraphCanvas() {
       gNode.selectAll<SVGCircleElement, GNode>("circle.body")
         .attr("stroke", (n) => cm.color(n)).attr("stroke-opacity", 0.95)
         .attr("stroke-width", (n) => Math.max(1.4, n.r! * 0.14));
-      gLink.selectAll("line").attr("stroke-opacity", 0.32);
+      gLink.selectAll("line").attr("stroke-opacity", 0.2);
       return;
     }
     const w = neighborWeights(id);
