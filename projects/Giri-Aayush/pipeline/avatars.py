@@ -14,12 +14,44 @@ Everything is cached and committed (``web/avatars/`` + ``manifest.json``), so:
 
 from __future__ import annotations
 
+import io
 import json
 import subprocess
 import urllib.request
+from collections import Counter
 from pathlib import Path
 
 from .identity import IdentityResolver
+
+
+def _is_placeholder_avatar(data: bytes) -> bool:
+    """True for GitHub's default identicons and solid-color fills.
+
+    Those read as ugly geometric blocks in the network, so we skip them and let
+    the node render as its clean community-colored sphere instead. A GitHub
+    identicon is one or two flat colors on GitHub's ``#f0f0f0`` field; a solid
+    fill is a single color. Real photos and logos have far richer palettes.
+
+    Graceful: if Pillow isn't installed we keep the avatar rather than crash, so
+    the pipeline still runs on a bare environment (just without this polish).
+    """
+    try:
+        from PIL import Image
+    except ModuleNotFoundError:
+        return False
+    try:
+        im = Image.open(io.BytesIO(data)).convert("RGB").resize((48, 48), Image.NEAREST)
+    except Exception:  # noqa: BLE001, an undecodable blob is not our concern here
+        return False
+    px = list(im.getdata())
+    n = len(px) or 1
+
+    def near_grey(p: tuple[int, int, int], t: tuple[int, int, int] = (240, 240, 240), tol: int = 14) -> bool:
+        return all(abs(p[i] - t[i]) <= tol for i in range(3))
+
+    grey_bg = sum(1 for p in px if near_grey(p)) / n
+    quantized = len(Counter((r >> 4, g >> 4, b >> 4) for r, g, b in px))
+    return (quantized <= 4 and grey_bg >= 0.30) or quantized <= 1
 
 
 def _gh_email_map(repos: list[str], cache_file: Path) -> dict[str, str]:
@@ -97,6 +129,8 @@ def build_manifest(records: list[dict], repos: list[str], web_dir: Path, cache_d
                 data = resp.read()
         except Exception:
             continue
+        if _is_placeholder_avatar(data):
+            continue  # GitHub identicon / solid placeholder: let the node be a colored sphere
         # extension must match the real bytes or a static server sends the wrong MIME
         ext = "jpg" if data[:3] == b"\xff\xd8\xff" else "png"
         fn = f"{gid}.{ext}"

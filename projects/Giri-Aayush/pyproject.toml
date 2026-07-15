@@ -8,6 +8,7 @@ dependencies = [
     "pydriller>=2.10",
     "networkx>=3.3",
     "python-louvain>=0.16",
+    "pillow>=10.0",
 ]
 
 [project.scripts]
