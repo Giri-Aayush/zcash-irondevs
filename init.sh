@@ -1,6 +1,12 @@
 #!/bin/bash
 
-while read REPO; do
+SOURCE="https://codez.ombie.cash"
+REPOSITORIES="$SOURCE/assets/data/repositories.dat"
+SAMPLE_SIZE=5
+
+while IFS= read -r REPO; do
+  [[ -z "$REPO" ]] && continue
+
   SOURCE="https://github.com/$REPO.git"
   TARGET="./data/$REPO.git"
 
@@ -10,5 +16,4 @@ while read REPO; do
   else
     echo "Target $TARGET already exists, skip."
   fi
-done < repositories.dat
-
+done < <(curl -sfL $REPOSITORIES | shuf -n $SAMPLE_SIZE)
