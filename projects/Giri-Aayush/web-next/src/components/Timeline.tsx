@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { useViz } from "@/lib/store";
 import { MILESTONES, prettyMonth } from "@/lib/graph";
 import { Segmented } from "./Segmented";
@@ -40,18 +41,27 @@ export default function Timeline() {
   return (
     <div className="glass pointer-events-auto flex items-center gap-5 px-5 py-3">
       {/* play */}
-      <button
+      <motion.button
         onClick={togglePlay}
         aria-label={playing ? "Pause" : "Play"}
-        className="grid size-11 flex-none place-items-center rounded-full text-[13px] transition-transform hover:scale-105 active:scale-95"
+        whileHover={{ scale: 1.08 }}
+        whileTap={{ scale: 0.9 }}
+        transition={{ type: "spring", stiffness: 500, damping: 20 }}
+        className="grid size-11 flex-none place-items-center rounded-full text-[13px]"
         style={{
           background: playing ? "rgba(255,255,255,0.06)" : "radial-gradient(circle at 36% 30%, #ffd469, var(--gold))",
           color: playing ? "#ede7dc" : "#241a00",
-          boxShadow: playing ? "none" : "0 4px 16px -4px rgba(244,183,40,0.5)",
+          boxShadow: playing ? "none" : "0 4px 18px -4px rgba(244,183,40,0.55)",
         }}
       >
-        {playing ? "❚❚" : "▶"}
-      </button>
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.span key={playing ? "pause" : "play"}
+            initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }}
+            transition={{ duration: 0.15 }}>
+            {playing ? "❚❚" : "▶"}
+          </motion.span>
+        </AnimatePresence>
+      </motion.button>
 
       {/* month + milestone pill */}
       <div className="flex w-[190px] flex-none items-center gap-3">

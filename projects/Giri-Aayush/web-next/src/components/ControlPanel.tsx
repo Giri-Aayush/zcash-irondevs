@@ -29,18 +29,23 @@ export default function ControlPanel() {
   if (!data) return null;
 
   return (
-    <div className="glass pointer-events-auto flex w-[264px] flex-col gap-4 p-3.5">
-      {/* header */}
-      <div className="flex items-center gap-2.5">
-        <div className="grid size-9 place-items-center rounded-full border border-gold/40 bg-gold/10 text-gold shadow-[0_0_16px_-4px_var(--gold)]">
-          <span className="text-[15px]">◈</span>
+    <div className="glass pointer-events-auto relative flex w-[272px] flex-col gap-[18px] p-4 pl-5">
+      {/* signature: a thin gold accent down the left edge */}
+      <span className="absolute left-0 top-5 bottom-5 w-[2px] rounded-full bg-gradient-to-b from-gold/70 via-gold/25 to-transparent" />
+
+      {/* editorial masthead */}
+      <div>
+        <div className="mb-2 flex items-center gap-2">
+          <span className="text-gold" style={{ filter: "drop-shadow(0 0 8px var(--gold))" }}>◈</span>
+          <span className="label text-gold/70" style={{ letterSpacing: "0.24em" }}>Ironwood Almanac</span>
         </div>
-        <div>
-          <h1 className="font-display text-[15px] leading-tight font-semibold">Ten Years of Zcash</h1>
-          <p className="label mt-0.5" style={{ letterSpacing: "0.06em" }}>
-            Co-authorship network · {data.meta.months[0]} → {data.meta.months.at(-1)}
-          </p>
-        </div>
+        <h1 className="font-display text-[26px] font-semibold leading-[0.92] tracking-[-0.03em]">
+          Ten Years<br />of Zcash
+        </h1>
+        <p className="mono mt-2 text-[10.5px] text-foreground/45">
+          A co-authorship network · {data.meta.months[0]?.replace("-", ".")} → {data.meta.months.at(-1)?.replace("-", ".")}
+        </p>
+        <div className="mt-3 h-px w-full bg-gradient-to-r from-white/12 to-transparent" />
       </div>
 
       {/* search */}

@@ -1,12 +1,20 @@
 "use client";
 
 import { useEffect } from "react";
+import { motion } from "motion/react";
 import { useViz } from "@/lib/store";
 import GraphCanvas from "@/components/GraphCanvas";
 import StatsBar from "@/components/StatsBar";
 import ControlPanel from "@/components/ControlPanel";
 import Timeline from "@/components/Timeline";
 import Tooltip from "@/components/Tooltip";
+
+// cinematic rise-and-unblur, spring-settled
+const rise = (dir: "left" | "top" | "bottom", delay: number) => ({
+  initial: { opacity: 0, filter: "blur(7px)", ...(dir === "left" ? { x: -26 } : { y: dir === "top" ? -22 : 30 }) },
+  animate: { opacity: 1, filter: "blur(0px)", x: 0, y: 0 },
+  transition: { type: "spring" as const, stiffness: 90, damping: 17, delay },
+});
 
 export default function Home() {
   const load = useViz((s) => s.load);
@@ -33,24 +41,20 @@ export default function Home() {
       />
 
       {/* graph fills the stage */}
-      <div className="absolute inset-0 animate-in fade-in duration-1000">
+      <motion.div className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1.2, ease: "easeOut" }}>
         {data ? <GraphCanvas /> : <Loading />}
-      </div>
+      </motion.div>
 
-      {/* floating chrome — staggered entrance */}
+      {/* floating chrome — spring-staggered entrance */}
       <div className="pointer-events-none absolute inset-0 flex flex-col justify-between p-4">
         <div className="flex items-start justify-between gap-4">
-          <div className="animate-in fade-in slide-in-from-left-6 fill-mode-both delay-100 duration-700 ease-out">
-            <ControlPanel />
-          </div>
-          <div className="animate-in fade-in slide-in-from-top-4 fill-mode-both delay-200 duration-700 ease-out">
-            <StatsBar />
-          </div>
+          <motion.div {...rise("left", 0.15)}><ControlPanel /></motion.div>
+          <motion.div {...rise("top", 0.3)}><StatsBar /></motion.div>
         </div>
         <div className="flex justify-center">
-          <div className="pointer-events-auto w-full max-w-[1180px] animate-in fade-in slide-in-from-bottom-8 fill-mode-both delay-300 duration-700 ease-out">
+          <motion.div className="pointer-events-auto w-full max-w-[1180px]" {...rise("bottom", 0.45)}>
             <Timeline />
-          </div>
+          </motion.div>
         </div>
       </div>
 
