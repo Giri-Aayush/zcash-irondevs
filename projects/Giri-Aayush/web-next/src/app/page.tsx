@@ -17,7 +17,7 @@ export default function Home() {
     <main className="relative h-full w-full overflow-hidden bg-canvas">
       {/* ambient gold glow + grain */}
       <div
-        className="pointer-events-none absolute inset-0"
+        className="breathe pointer-events-none absolute inset-0"
         style={{
           background:
             "radial-gradient(90% 70% at 52% 42%, rgba(90,110,180,0.10), transparent 60%)," +
@@ -33,16 +33,22 @@ export default function Home() {
       />
 
       {/* graph fills the stage */}
-      <div className="absolute inset-0">{data ? <GraphCanvas /> : <Loading />}</div>
+      <div className="absolute inset-0 animate-in fade-in duration-1000">
+        {data ? <GraphCanvas /> : <Loading />}
+      </div>
 
-      {/* floating chrome */}
+      {/* floating chrome — staggered entrance */}
       <div className="pointer-events-none absolute inset-0 flex flex-col justify-between p-4">
         <div className="flex items-start justify-between gap-4">
-          <ControlPanel />
-          <StatsBar />
+          <div className="animate-in fade-in slide-in-from-left-6 fill-mode-both delay-100 duration-700 ease-out">
+            <ControlPanel />
+          </div>
+          <div className="animate-in fade-in slide-in-from-top-4 fill-mode-both delay-200 duration-700 ease-out">
+            <StatsBar />
+          </div>
         </div>
         <div className="flex justify-center">
-          <div className="pointer-events-auto w-full max-w-[1180px]">
+          <div className="pointer-events-auto w-full max-w-[1180px] animate-in fade-in slide-in-from-bottom-8 fill-mode-both delay-300 duration-700 ease-out">
             <Timeline />
           </div>
         </div>

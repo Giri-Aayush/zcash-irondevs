@@ -1,14 +1,36 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useViz } from "@/lib/store";
 import { computeStats } from "@/lib/graph";
 
-function Stat({ label, value }: { label: string; value: string }) {
+// smoothly tween a displayed number toward its target (easeOutCubic)
+function useCountUp(target: number, duration = 400) {
+  const [v, setV] = useState(target);
+  const cur = useRef(target);
+  useEffect(() => {
+    const from = cur.current;
+    const start = performance.now();
+    let raf = 0;
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / duration);
+      const e = 1 - Math.pow(1 - t, 3);
+      cur.current = from + (target - from) * e;
+      setV(cur.current);
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, duration]);
+  return v;
+}
+
+function Stat({ label, value, format }: { label: string; value: number; format: (n: number) => string }) {
+  const shown = useCountUp(value);
   return (
     <div className="flex flex-col gap-0.5 px-3.5">
       <span className="label">{label}</span>
-      <span className="font-display tnum text-[19px] leading-none font-semibold text-foreground">{value}</span>
+      <span className="font-display tnum text-[19px] leading-none font-semibold text-foreground">{format(shown)}</span>
     </div>
   );
 }
@@ -27,7 +49,8 @@ function Growth() {
       <span className="label">Growth</span>
       <svg width={W} height={H} className="overflow-visible">
         <path d={path} fill="none" stroke="var(--gold)" strokeWidth={1.5} />
-        <circle cx={x(month)} cy={y(series[month])} r={2.4} fill="var(--gold)" />
+        <circle cx={x(month)} cy={y(series[month])} r={2.4} fill="var(--gold)"
+          style={{ transition: "cx 0.3s ease-out, cy 0.3s ease-out" }} />
       </svg>
     </div>
   );
@@ -40,13 +63,13 @@ export default function StatsBar() {
     [data, month, mode, windowSize, minWeight, showBots]
   );
   if (!s) return null;
-  const fmt = (n: number) => n.toLocaleString("en-US");
+  const int = (n: number) => Math.round(n).toLocaleString("en-US");
   return (
     <div className="glass pointer-events-auto flex items-stretch divide-x divide-white/[0.06] py-2.5">
-      <Stat label="People" value={fmt(s.people)} />
-      <Stat label="Ties" value={fmt(s.ties)} />
-      <Stat label="Commits" value={fmt(s.commits)} />
-      <Stat label="Density" value={`${(s.density * 100).toFixed(1)}%`} />
+      <Stat label="People" value={s.people} format={int} />
+      <Stat label="Ties" value={s.ties} format={int} />
+      <Stat label="Commits" value={s.commits} format={int} />
+      <Stat label="Density" value={s.density * 100} format={(n) => `${n.toFixed(1)}%`} />
       <Growth />
     </div>
   );

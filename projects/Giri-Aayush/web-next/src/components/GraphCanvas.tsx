@@ -212,37 +212,50 @@ export default function GraphCanvas() {
       .data(nodes, (n: any) => n.id)
       .join(
         (enter: any) => {
-          const g = enter.append("g").attr("class", "node").style("cursor", "pointer");
-          g.append("circle").attr("class", "halo").attr("pointer-events", "none");   // colored glow
-          g.append("circle").attr("class", "body");                                   // sphere / avatar
-          g.append("circle").attr("class", "sheen").attr("pointer-events", "none");    // glossy highlight
+          const g = enter.append("g").attr("class", "node").style("cursor", "pointer").style("opacity", 0);
+          g.append("circle").attr("class", "halo").attr("pointer-events", "none").attr("r", 0);  // colored glow
+          g.append("circle").attr("class", "body").attr("r", 0);                                  // sphere / avatar
+          g.append("circle").attr("class", "sheen").attr("pointer-events", "none").attr("r", 0);   // glossy highlight
           g.call(drag());
-          g.on("mouseenter", (_e: any, n: GNode) => { useViz.getState().set("hovered", n.id); if (!useViz.getState().selected) applyHighlight(n.id); })
-            .on("mouseleave", () => { useViz.getState().set("hovered", null); if (!useViz.getState().selected) applyHighlight(null); })
+          g.transition().duration(600).ease(d3.easeCubicOut).style("opacity", 1); // fade in
+          g.on("mouseenter", function (this: any, _e: any, n: GNode) {
+            useViz.getState().set("hovered", n.id);
+            d3.select(this).raise();
+            d3.select(this).select("circle.body").transition("hv").duration(160).attr("r", (n.r || 6) * 1.18);
+            d3.select(this).select("circle.halo").transition("hv").duration(160).attr("r", (n.r || 6) * 2.6).attr("opacity", 1);
+            if (!useViz.getState().selected) applyHighlight(n.id);
+          })
+            .on("mouseleave", function (this: any, _e: any, n: GNode) {
+              useViz.getState().set("hovered", null);
+              d3.select(this).select("circle.body").transition("hv").duration(220).attr("r", n.r || 6);
+              d3.select(this).select("circle.halo").transition("hv").duration(220).attr("r", (n.r || 6) * 2.1).attr("opacity", (n.deg || 0) > 0 ? 0.95 : 0);
+              if (!useViz.getState().selected) applyHighlight(null);
+            })
             .on("click", (e: any, n: GNode) => { e.stopPropagation(); const cur = useViz.getState().selected; useViz.getState().set("selected", cur === n.id ? null : n.id); });
           return g;
         },
         (u: any) => u,
-        (exit: any) => exit.remove()
+        (exit: any) => exit.transition().duration(320).ease(d3.easeCubicIn).style("opacity", 0).remove()
       );
     const conn = (n: GNode) => (n.deg || 0) > 0;
+    const T = () => d3.transition().duration(450).ease(d3.easeCubicOut) as any;
     nodeSel.select("circle.halo")
-      .attr("r", (n: GNode) => n.r! * 2.1)
       .attr("fill", (n: GNode) => grads(color(n)).glow)
-      .attr("opacity", (n: GNode) => (conn(n) ? (n.is_bot ? 0.3 : 0.95) : 0)); // muted sea has no glow
+      .attr("opacity", (n: GNode) => (conn(n) ? (n.is_bot ? 0.3 : 0.95) : 0)) // muted sea has no glow
+      .transition(T()).attr("r", (n: GNode) => n.r! * 2.1);
     nodeSel.select("circle.body")
-      .attr("r", (n: GNode) => n.r!)
       .attr("fill", (n: GNode) => (!conn(n) ? "url(#muted)" : n.avatar ? avatarFill(n) : grads(color(n)).sphere))
       .attr("fill-opacity", (n: GNode) => (!conn(n) ? 0.5 : n.is_bot ? 0.5 : 1))
       .attr("stroke", (n: GNode) => (conn(n) ? color(n) : "#2b3450"))
       .attr("stroke-opacity", (n: GNode) => (conn(n) ? 0.95 : 0.5))
-      .attr("stroke-width", (n: GNode) => (conn(n) ? Math.max(1.6, n.r! * 0.13) : 1));
+      .attr("stroke-width", (n: GNode) => (conn(n) ? Math.max(1.6, n.r! * 0.13) : 1))
+      .transition(T()).attr("r", (n: GNode) => n.r!);
     nodeSel.select("circle.sheen")
-      .attr("r", (n: GNode) => n.r! * 0.86)
       .attr("cx", (n: GNode) => -n.r! * 0.12)
       .attr("cy", (n: GNode) => -n.r! * 0.14)
       .attr("fill", "url(#sheen)")
-      .attr("opacity", (n: GNode) => (!conn(n) ? 0.35 : n.avatar ? 0.16 : 0.5));
+      .attr("opacity", (n: GNode) => (!conn(n) ? 0.35 : n.avatar ? 0.16 : 0.5))
+      .transition(T()).attr("r", (n: GNode) => n.r! * 0.86);
 
     refs.current.svg.on("click", () => useViz.getState().set("selected", null));
 

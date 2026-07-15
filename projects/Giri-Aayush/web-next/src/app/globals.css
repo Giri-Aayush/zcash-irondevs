@@ -105,3 +105,9 @@
     color: var(--gold);
   }
 }
+
+@keyframes breathe {
+  0%, 100% { opacity: 0.7; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+.breathe { animation: breathe 10s ease-in-out infinite; }
