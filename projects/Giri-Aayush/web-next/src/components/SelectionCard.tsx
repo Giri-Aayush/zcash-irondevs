@@ -6,7 +6,7 @@ import { useViz } from "@/lib/store";
 import { buildColorModel } from "@/lib/graph";
 
 export default function SelectionCard() {
-  const { data, selected, colorBy, month, mode, windowSize, set } = useViz();
+  const { data, selected, colorBy, set } = useViz();
 
   const info = useMemo(() => {
     if (!data || !selected) return null;
@@ -75,7 +75,7 @@ export default function SelectionCard() {
             {[
               { label: "Commits", value: info.n.commits.toLocaleString() },
               { label: "Ties", value: String(info.ties) },
-              { label: "Since", value: info.firstYear ?? "—" },
+              { label: "Since", value: info.firstYear ?? "n/a" },
             ].map((s) => (
               <div key={s.label} className="rounded-lg border border-white/[0.06] bg-black/20 px-2.5 py-2">
                 <div className="font-display tnum text-[16px] font-semibold leading-none">{s.value}</div>
@@ -98,7 +98,7 @@ export default function SelectionCard() {
             </div>
           )}
 
-          {/* top collaborators — click to jump */}
+          {/* top collaborators, click to jump */}
           {info.collabs.length > 0 && (
             <div className="mt-4">
               <div className="label mb-1.5">Closest collaborators</div>

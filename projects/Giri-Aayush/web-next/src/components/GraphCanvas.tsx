@@ -144,14 +144,13 @@ export default function GraphCanvas() {
   }, [selected]);
 
   // when the story ends and exploration begins, re-frame the (decluttered) network,
-  // unless a specific person is being focused (search jump) — then let recenter win
+  // unless a specific person is being focused (search jump), then let recenter win
   useEffect(() => {
     if (story || !sim.current) return;
     const t = setTimeout(() => {
       if (!useViz.getState().selected) refs.current.fitView?.(750);
     }, 480);
     return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [story]);
 
   function avatarFill(n: GNode) {
