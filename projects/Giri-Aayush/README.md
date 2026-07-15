@@ -1,17 +1,17 @@
-# Ten Years of Zcash — Dynamic Co-Authorship Network
+# Ten Years of Zcash, Dynamic Co-Authorship Network
 
-> An animated, time-sliceable map of everyone who built Zcash and who they built it with — a decade of commits assembled into a living network, in the browser.
+> An animated, time-sliceable map of everyone who built Zcash and who they built it with, a decade of commits assembled into a living network, in the browser.
 
 ![The Zcash co-authorship network](docs/hero.png)
 
-*The decade replaying — from the founding team to the Ironwood-era ecosystem:*
+*The decade replaying, from the founding team to the Ironwood-era ecosystem:*
 
 ![Playing the decade](docs/demo.gif)
 
 Every dot is a **person**. Every line joins two people who worked in the same
 repository, weighted by how many months they were actually active there together.
-On load the piece **plays the decade back** — from the founding handful in 2016 to
-the ~190-strong ecosystem that ships Ironwood — narrated at each Zcash network
+On load the piece **plays the decade back**, from the founding handful in 2016 to
+the ~190-strong ecosystem that ships Ironwood, narrated at each Zcash network
 upgrade; then you can *explore*. Contributor nodes carry their real GitHub avatars,
 ringed in their detected community color.
 
@@ -23,7 +23,7 @@ author↔repository graph), with animated, interactive visualization.
 
 ## Run it in 5 seconds (no build)
 
-The visualization is **pre-built and committed** to `web-next/out/` — serve those
+The visualization is **pre-built and committed** to `web-next/out/`, serve those
 static files, no Node/npm/build required:
 
 ```bash
@@ -37,7 +37,7 @@ To render your own mirror instead of the committed seed data, run the Python
 pipeline, then rebuild the static site:
 
 ```bash
-./init.sh                                   # from the contest root — clone the repos
+./init.sh                                   # from the contest root, clone the repos
 cd projects/Giri-Aayush
 uv sync
 uv run ironwood                             # mine → dedup → project → web-next/public/graph.json
@@ -63,15 +63,15 @@ data root, so it scales unchanged to the full CodeZ mirror.
 The judge runs this on 500+ repos / millions of commits. The pipeline is built for
 that, not just the sample:
 
-- **Fault-isolated mining** — a repo that fails mid-traversal (empty/unborn HEAD,
+- **Fault-isolated mining**, a repo that fails mid-traversal (empty/unborn HEAD,
   corrupt ref, non-UTF-8 metadata) is skipped, never aborting the run
   (`mine.py`); author strings are unicode-sanitized so no single name can crash
   the cache write or the JSON export.
-- **Bounded output** — the rendered network is capped to the top-N contributors
+- **Bounded output**, the rendered network is capped to the top-N contributors
   by commits and the strongest ties (`--max-nodes`, internal `max_edges`), applied
   *before* projection, so `graph.json` and the browser stay fast no matter how
   dense the core is.
-- **Validated at scale** — a synthetic 400k-commit / 2,500-contributor archive
+- **Validated at scale**, a synthetic 400k-commit / 2,500-contributor archive
   builds in ~25 s at ~0.5 GB RAM into a ~2.4 MB `graph.json`. (Cold mining of the
   real multi-GB archive is I/O-bound in PyDriller; the incremental `HEAD`-keyed
   cache makes every subsequent run near-instant.)
@@ -100,13 +100,13 @@ that, not just the sample:
 | Author deduplication | `pipeline/identity.py` (union-find; conservative name-merge) |
 | Web interactive viz | `web-next/` |
 | *Extra:* multiprocessing | `pipeline/mine.py` (one worker per repo) |
-| *Extra:* network metrics | degree, betweenness, Louvain communities, per-month density timeline — surfaced via **Size by** + the stats bar |
+| *Extra:* network metrics | degree, betweenness, Louvain communities, per-month density timeline, surfaced via **Size by** + the stats bar |
 
 ## How a tie is measured
 
 Two contributors are linked when they were active in the same repository. The
 tie's weight is the number of **months they were both active there** (summed
-across shared repos), plus any `Co-authored-by` commits — so long-running
+across shared repos), plus any `Co-authored-by` commits, so long-running
 collaborators clearly outweigh one-off overlaps, and `weight == Σ monthly
 increments` holds so the strength filter stays consistent through time. Identities
 are union-found over `(name, email)`, merging on shared email or a full "First

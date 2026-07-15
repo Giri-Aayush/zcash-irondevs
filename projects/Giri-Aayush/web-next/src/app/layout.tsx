@@ -17,7 +17,7 @@ const mono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: "Ten Years of Zcash · Co-authorship Network",
   description:
-    "A decade of Zcash development as a dynamic co-authorship network — animated, interactive, built from the git history of the ecosystem.",
+    "A decade of Zcash development as a dynamic co-authorship network, animated, interactive, built from the git history of the ecosystem.",
 };
 
 export default function RootLayout({

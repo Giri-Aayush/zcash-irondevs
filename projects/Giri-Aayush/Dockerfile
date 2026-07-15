@@ -1,4 +1,4 @@
-# Zcash Irondevs — builds the co-authorship visualization as a static site.
+# Zcash Irondevs, builds the co-authorship visualization as a static site.
 #
 # Uses the committed web-next/public/graph.json (seed data). To render the full
 # CodeZ archive, run the Python pipeline first (see README) to regenerate that

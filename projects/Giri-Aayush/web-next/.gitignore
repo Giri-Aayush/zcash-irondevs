@@ -15,7 +15,7 @@
 
 # next.js
 /.next/
-# NOTE: /out/ is intentionally committed — the pre-built static site lets the
+# NOTE: /out/ is intentionally committed, the pre-built static site lets the
 # judge serve the visualization with zero build (see README).
 
 # production

@@ -18,7 +18,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
-# Emails that GitHub issues for privacy — the numeric+username prefix is the
+# Emails that GitHub issues for privacy, the numeric+username prefix is the
 # stable identifier, so we normalize to it rather than the raw address.
 _GH_NOREPLY = re.compile(r"^(?:\d+\+)?([^@]+)@users\.noreply\.github\.com$", re.I)
 
@@ -32,7 +32,7 @@ _BOT_PATTERNS = (
     "semantic-release",
     "[bot]",
     "actions-user",
-    "web-flow",  # GitHub's merge-commit committer
+    "web-flow", # GitHub's merge-commit committer
 )
 
 # Names too generic to be a reliable merge key on their own.
@@ -180,7 +180,7 @@ def _pick_display_name(names: list[str]) -> str:
     counts: dict[str, int] = {}
     for n in names:
         counts[n] = counts.get(n, 0) + 1
-    # most frequent, then longest, then alphabetical — all deterministic
+    # most frequent, then longest, then alphabetical, all deterministic
     return sorted(names, key=lambda n: (-counts[n], -len(n), n))[0]
 
 

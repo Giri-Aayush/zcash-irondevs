@@ -1,7 +1,7 @@
 [project]
 name = "zcash-irondevs-ironwood"
 version = "0.1.0"
-description = "Dynamic co-authorship network of the Zcash ecosystem — Ironwood contest submission"
+description = "Dynamic co-authorship network of the Zcash ecosystem, Ironwood contest submission"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [

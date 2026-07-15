@@ -72,7 +72,7 @@ export default function Timeline() {
 
       {/* track */}
       <div className="relative flex-1">
-        {/* milestone labels — hidden on small screens (they'd collide) */}
+        {/* milestone labels, hidden on small screens (they'd collide) */}
         <div className="pointer-events-none absolute -top-2 left-0 hidden h-6 w-full sm:block">
           {MILESTONES.map(([ym, name], i) => {
             const idx = months.indexOf(ym);

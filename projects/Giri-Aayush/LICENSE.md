@@ -23,4 +23,4 @@ SOFTWARE.
 ---
 
 Bundled third-party code:
-  * D3.js (web/lib/d3.v7.min.js) — ISC License, © Mike Bostock.
+  * D3.js (web/lib/d3.v7.min.js), ISC License, © Mike Bostock.

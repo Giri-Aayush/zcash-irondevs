@@ -34,7 +34,7 @@
   --radius-xl: calc(var(--radius) * 1.4);
 }
 
-/* ── Ten Years of Zcash — instrument design system ── */
+/* ── Ten Years of Zcash, instrument design system ── */
 :root {
   --canvas: #090d16;
   --gold: #f4b728;
@@ -74,7 +74,7 @@
 }
 
 @layer utilities {
-  /* floating glass panel — the signature surface */
+  /* floating glass panel, the signature surface */
   .glass {
     background: rgba(13, 17, 27, 0.72);
     border: 1px solid var(--hairline);
@@ -85,7 +85,7 @@
       inset 0 1px 0 rgba(255, 255, 255, 0.05),
       0 18px 50px -20px rgba(0, 0, 0, 0.8);
   }
-  /* tiny tracked mono label — IBM Plex Mono, uppercase */
+  /* tiny tracked mono label, IBM Plex Mono, uppercase */
   .label {
     font-family: var(--font-mono), monospace;
     text-transform: uppercase;

@@ -5,13 +5,13 @@ import { useViz } from "@/lib/store";
 
 // The decade as authored beats, keyed to Zcash network upgrades.
 const CHAPTERS: { ym: string; title: string; text: string }[] = [
-  { ym: "2015-12", title: "Genesis", text: "Late 2015 — a handful of cryptographers begin the Zcash codebase." },
-  { ym: "2016-10", title: "Sprout · mainnet", text: "Oct 2016 — Zcash launches. The founding core is tiny and tightly knit." },
-  { ym: "2018-10", title: "Sapling", text: "2018 — Sapling makes shielded transactions practical; the contributor base widens." },
-  { ym: "2020-07", title: "Heartwood → Canopy", text: "2020 — upgrades land back to back as the ecosystem matures." },
-  { ym: "2022-05", title: "NU5 · Orchard", text: "2022 — Orchard & unified addresses. New teams join; collaboration deepens." },
-  { ym: "2024-11", title: "NU6", text: "2024 — the network keeps shipping. The graph is now dense with ties." },
-  { ym: "2026-07", title: "Ironwood", text: "2026 — ten years, ~180 people, one shielded ecosystem." },
+  { ym: "2015-12", title: "Genesis", text: "Late 2015, a handful of cryptographers begin the Zcash codebase." },
+  { ym: "2016-10", title: "Sprout · mainnet", text: "Oct 2016, Zcash launches. The founding core is tiny and tightly knit." },
+  { ym: "2018-10", title: "Sapling", text: "2018, Sapling makes shielded transactions practical; the contributor base widens." },
+  { ym: "2020-07", title: "Heartwood → Canopy", text: "2020, upgrades land back to back as the ecosystem matures." },
+  { ym: "2022-05", title: "NU5 · Orchard", text: "2022, Orchard & unified addresses. New teams join; collaboration deepens." },
+  { ym: "2024-11", title: "NU6", text: "2024, the network keeps shipping. The graph is now dense with ties." },
+  { ym: "2026-07", title: "Ironwood", text: "2026, ten years, ~190 people, one shielded ecosystem." },
 ];
 
 export default function StoryCaption() {

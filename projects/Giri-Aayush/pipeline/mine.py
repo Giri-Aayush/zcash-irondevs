@@ -1,11 +1,11 @@
 """Commit-metadata mining from bare repositories.
 
-We only need commit *metadata* (author, committer, co-authors, date) — never
-diffs — so mining is fast and safe to run against the judge's bare mirrors.
+We only need commit *metadata* (author, committer, co-authors, date), never
+diffs, so mining is fast and safe to run against the judge's bare mirrors.
 
 Two features live here:
-    * multiprocessing  — one worker process per repository (extra feature)
-    * incremental      — per-repo cache keyed by HEAD; unchanged repos are
+    * multiprocessing, one worker process per repository (extra feature)
+    * incremental, per-repo cache keyed by HEAD; unchanged repos are
                          skipped, changed repos only append unseen commits
 """
 
@@ -68,8 +68,7 @@ def mine_repo(repo_path: str, slug: str, seen_hashes: set[str] | None = None) ->
     """Mine one repo. Returns new commit records not in ``seen_hashes``.
 
     Fault-isolated: a repo that fails mid-traversal (empty/unborn HEAD, corrupt
-    ref, unreadable object) returns whatever it collected instead of raising —
-    so a single bad repo among hundreds can't abort the whole archive run.
+    ref, unreadable object) returns whatever it collected instead of raising, so a single bad repo among hundreds can't abort the whole archive run.
     """
     seen = seen_hashes or set()
     records: list[dict] = []
@@ -91,7 +90,7 @@ def mine_repo(repo_path: str, slug: str, seen_hashes: set[str] | None = None) ->
                     )
                 )
             )
-    except Exception as e:  # noqa: BLE001 — resilience beats correctness-of-one-repo here
+    except Exception as e:  # noqa: BLE001, resilience beats correctness-of-one-repo here
         print(f"  ! {slug}: mining stopped early ({type(e).__name__}); kept {len(records)}")
     return records
 
@@ -134,7 +133,7 @@ def mine_all(
                 slug, cache_file, head, seen = futs[fut]
                 try:
                     new_records = fut.result()
-                except Exception as e:  # noqa: BLE001 — one worker dying must not abort the run
+                except Exception as e:  # noqa: BLE001, one worker dying must not abort the run
                     print(f"  ! {slug}: skipped ({type(e).__name__})")
                     continue
                 prior = _load_cache(cache_file)

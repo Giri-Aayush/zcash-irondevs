@@ -87,7 +87,7 @@ def build(records: list[dict], *, window_years: float = 0.0, avatars: dict | Non
     first_touch: dict[tuple[str, str], int] = {}
     # direct co-authored-by pair weights, bucketed by month
     coauthor_monthly: dict[tuple[str, str], dict[int, int]] = defaultdict(lambda: defaultdict(int))
-    # months each author was active in each repo — powers a meaningful tie weight
+    # months each author was active in each repo, powers a meaningful tie weight
     repo_month: dict[tuple[str, str], set[int]] = defaultdict(set)
 
     for r in records:
@@ -109,14 +109,14 @@ def build(records: list[dict], *, window_years: float = 0.0, avatars: dict | Non
                 first_touch[key] = mi
             repo_month[key].add(mi)
 
-        # direct co-authorship (same commit, >1 person) — strongest tie signal
+        # direct co-authorship (same commit, >1 person), strongest tie signal
         for a, b in itertools.combinations(sorted(authorship), 2):
             coauthor_monthly[(a, b)][mi] += 1
 
     # ---- 4. cap to the most prolific contributors, THEN project ----------
     # The judge runs this on the full CodeZ archive (500+ repos, millions of
     # commits, thousands of contributors). Capping to the top-N people by commits
-    # *before* projecting bounds the edge set to O(N^2) — so a repo with hundreds
+    # *before* projecting bounds the edge set to O(N^2), so a repo with hundreds
     # of contributors can't explode the graph. Metrics use full data where it
     # matters (commit counts); the rendered network is the top people. On the seed
     # data (181 people) this is a no-op.
@@ -134,7 +134,7 @@ def build(records: list[dict], *, window_years: float = 0.0, avatars: dict | Non
     for repo, authors in repo_authors.items():
         for a, b in itertools.combinations(sorted(authors), 2):
             # tie strength = months BOTH were active in this repo (real co-activity),
-            # not a flat +1 — so long-running collaborators outweigh one-off overlaps.
+            # not a flat +1, so long-running collaborators outweigh one-off overlaps.
             co_months = repo_month[(a, repo)] & repo_month[(b, repo)]
             born = min(co_months) if co_months else max(first_touch[(a, repo)], first_touch[(b, repo)])
             e = edges.get((a, b))
@@ -245,7 +245,7 @@ def build(records: list[dict], *, window_years: float = 0.0, avatars: dict | Non
 
     return {
         "meta": {
-            "generated_utc": None,  # stamped by caller
+            "generated_utc": None, # stamped by caller
             "months": labels,
             "n_months": n_months,
             "n_commits": len(records),

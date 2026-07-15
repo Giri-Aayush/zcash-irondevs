@@ -20,7 +20,7 @@ export default function Tooltip() {
 
   let ties = 0;
   for (const l of data.links) {
-    // use the frozen id copies — d3-force mutates l.source/l.target into node objects
+    // use the frozen id copies, d3-force mutates l.source/l.target into node objects
     if ((l.s ?? l.source) !== n.id && (l.t ?? l.target) !== n.id) continue;
     if (linkWeight(l, month, mode, windowSize) >= minWeight) ties++;
   }
