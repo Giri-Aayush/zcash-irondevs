@@ -98,26 +98,30 @@ export function prettyMonth(months: string[], m: number) {
 export function computeStats(
   data: GraphDoc, month: number, mode: Mode, windowSize: number, minWeight: number, showBots: boolean,
 ) {
-  const vis = new Set<string>();
-  let people = 0;
-  for (const n of data.nodes) {
-    if (n.is_bot && !showBots) continue;
-    if (nodeCommits(n, month, mode, windowSize) <= 0) continue;
-    vis.add(n.id);
-    if (!n.is_bot) people++;
-  }
+  const active = data.nodes.filter(
+    (n) => (showBots || !n.is_bot) && nodeCommits(n, month, mode, windowSize) > 0
+  );
+  const activeIds = new Set(active.map((n) => n.id));
   const deg = new Map<string, number>();
   let ties = 0;
   for (const l of data.links) {
-    if (!vis.has(l.s ?? l.source) || !vis.has(l.t ?? l.target)) continue;
+    const s = l.s ?? l.source, t = l.t ?? l.target;
+    if (!activeIds.has(s) || !activeIds.has(t)) continue;
     if (linkWeight(l, month, mode, windowSize) < minWeight) continue;
     ties++;
-    deg.set(l.s ?? l.source, 1);
-    deg.set(l.t ?? l.target, 1);
+    deg.set(s, (deg.get(s) || 0) + 1);
+    deg.set(t, (deg.get(t) || 0) + 1);
   }
-  const n = vis.size;
-  const density = n > 1 ? (2 * ties) / (n * (n - 1)) : 0;
-  return { people, ties, commits: distinctCommits(data.meta, month, mode, windowSize), density };
+  // match the graph: when filtering by tie strength, isolated nodes are hidden
+  const shown = minWeight > 1 ? active.filter((n) => (deg.get(n.id) || 0) > 0) : active;
+  const N = shown.length;
+  const density = N > 1 ? (2 * ties) / (N * (N - 1)) : 0;
+  return {
+    people: shown.filter((n) => !n.is_bot).length,
+    ties,
+    commits: distinctCommits(data.meta, month, mode, windowSize),
+    density,
+  };
 }
 
 // ── categorical palette (CVD-aware, muted-premium to match the design) ──

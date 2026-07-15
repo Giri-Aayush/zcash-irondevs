@@ -45,11 +45,13 @@ export const useViz = create<VizState>((setState, get) => ({
       l.s = l.source;
       l.t = l.target;
     }
-    // open decluttered on large archives: default tie-strength to the ~1500th edge
+    // open CLEAN, not as a hairball: default tie-strength so only the strongest
+    // ~60 collaborations show (that auto-limits to a well-spaced ~40-50 people).
+    // The sliders let you reveal the full dense network from there.
     let minWeight = 1;
-    if (data.links.length > 1800) {
+    if (data.links.length > 70) {
       const sorted = [...data.links].sort((a, b) => b.weight - a.weight);
-      minWeight = Math.max(1, sorted[1800].weight);
+      minWeight = Math.max(2, sorted[60].weight);
     }
     setState({ data, month: data.meta.n_months - 1, minWeight });
   },

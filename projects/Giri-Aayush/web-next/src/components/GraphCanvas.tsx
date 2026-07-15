@@ -44,15 +44,15 @@ export default function GraphCanvas() {
 
     const simulation = d3
       .forceSimulation<GNode, GLink>()
-      .alphaDecay(0.035)
-      .velocityDecay(0.45)
-      .force("charge", d3.forceManyBody().strength(-190).distanceMax(520))
+      .alphaDecay(0.03)
+      .velocityDecay(0.42)
+      .force("charge", d3.forceManyBody().strength(-620).distanceMax(900))
       .force("link", d3.forceLink<GNode, GLink>().id((d: any) => d.id)
-        .distance((l: any) => 70 / Math.sqrt(l.w || 1)).strength(0.35))
+        .distance((l: any) => 120 / Math.sqrt(l.w || 1)).strength(0.25))
       .force("center", d3.forceCenter(rect.width / 2, rect.height / 2))
-      .force("collide", d3.forceCollide<GNode>().radius((d) => (d.r || 4) + 4))
-      .force("x", d3.forceX(rect.width / 2).strength(0.02))
-      .force("y", d3.forceY(rect.height / 2).strength(0.02))
+      .force("collide", d3.forceCollide<GNode>().radius((d) => (d.r || 4) + 12).strength(0.9))
+      .force("x", d3.forceX(rect.width / 2).strength(0.012))
+      .force("y", d3.forceY(rect.height / 2).strength(0.012))
       .on("tick", () => {
         gLink.selectAll<SVGLineElement, GLink>("line")
           .attr("x1", (l) => byId.get(l.s!)!.x!)
@@ -140,7 +140,9 @@ export default function GraphCanvas() {
     const color = (n: GNode) => model.color(n);
 
     const val = (n: GNode) => nodeC.get(n.id) || 0;
-    const rScale = d3.scaleSqrt().domain([0, d3.max(nodes, val) || 1]).range([3, 24]);
+    // bigger, more prominent bubbles (like the reference); range widens when few nodes
+    const hi = nodes.length <= 70 ? 44 : 26;
+    const rScale = d3.scaleSqrt().domain([0, d3.max(nodes, val) || 1]).range([7, hi]);
     const scale = st.sizeScale;
 
     const rect = svgRef.current!.getBoundingClientRect();
