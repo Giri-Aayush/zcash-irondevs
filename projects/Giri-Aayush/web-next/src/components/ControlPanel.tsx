@@ -8,7 +8,7 @@ import { Segmented } from "./Segmented";
 
 const num = (v: number | readonly number[]) => (Array.isArray(v) ? v[0] : (v as number));
 
-export default function ControlPanel() {
+export default function ControlPanel({ onClose, className }: { onClose?: () => void; className?: string }) {
   const { data, colorBy, sizeScale, minWeight, set } = useViz();
   const [q, setQ] = useState("");
 
@@ -29,9 +29,20 @@ export default function ControlPanel() {
   if (!data) return null;
 
   return (
-    <div className="glass pointer-events-auto relative flex w-[272px] flex-col gap-[18px] p-4 pl-5">
+    <div className={`glass pointer-events-auto relative flex w-full max-w-[288px] flex-col gap-[18px] overflow-y-auto p-4 pl-5 md:w-[272px] md:max-h-[calc(100dvh-2rem)] ${className || ""}`}>
       {/* signature: a thin gold accent down the left edge */}
       <span className="absolute left-0 top-5 bottom-5 w-[2px] rounded-full bg-gradient-to-b from-gold/70 via-gold/25 to-transparent" />
+
+      {/* close button (mobile drawer only) */}
+      {onClose && (
+        <button
+          onClick={onClose}
+          aria-label="Close controls"
+          className="absolute right-3 top-3 z-10 grid size-7 place-items-center rounded-md text-foreground/50 hover:bg-white/[0.06] hover:text-foreground"
+        >
+          ✕
+        </button>
+      )}
 
       {/* editorial masthead */}
       <div>

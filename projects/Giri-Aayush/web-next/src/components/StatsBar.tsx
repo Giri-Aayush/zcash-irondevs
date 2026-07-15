@@ -25,12 +25,12 @@ function useCountUp(target: number, duration = 400) {
   return v;
 }
 
-function Stat({ label, value, format }: { label: string; value: number; format: (n: number) => string }) {
+function Stat({ label, value, format, className = "" }: { label: string; value: number; format: (n: number) => string; className?: string }) {
   const shown = useCountUp(value);
   return (
-    <div className="flex flex-col gap-0.5 px-3.5">
+    <div className={`flex flex-col gap-0.5 px-2.5 sm:px-3.5 ${className}`}>
       <span className="label">{label}</span>
-      <span className="font-display tnum text-[19px] leading-none font-semibold text-foreground">{format(shown)}</span>
+      <span className="font-display tnum text-[16px] leading-none font-semibold text-foreground sm:text-[19px]">{format(shown)}</span>
     </div>
   );
 }
@@ -45,7 +45,7 @@ function Growth() {
   const y = (v: number) => H - 3 - (v / max) * (H - 6);
   const path = series.map((v, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
   return (
-    <div className="flex flex-col gap-1 px-3.5">
+    <div className="hidden flex-col gap-1 px-3.5 lg:flex">
       <span className="label">Growth</span>
       <svg width={W} height={H} className="overflow-visible">
         <path d={path} fill="none" stroke="var(--gold)" strokeWidth={1.5} />
@@ -65,11 +65,11 @@ export default function StatsBar() {
   if (!s) return null;
   const int = (n: number) => Math.round(n).toLocaleString("en-US");
   return (
-    <div className="glass pointer-events-auto flex items-stretch divide-x divide-white/[0.06] py-2.5">
+    <div className="glass pointer-events-auto flex items-stretch divide-x divide-white/[0.06] py-2 sm:py-2.5">
       <Stat label="People" value={s.people} format={int} />
       <Stat label="Ties" value={s.ties} format={int} />
       <Stat label="Commits" value={s.commits} format={int} />
-      <Stat label="Density" value={s.density * 100} format={(n) => `${n.toFixed(1)}%`} />
+      <Stat label="Density" value={s.density * 100} format={(n) => `${n.toFixed(1)}%`} className="hidden sm:flex" />
       <Growth />
     </div>
   );

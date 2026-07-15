@@ -39,7 +39,7 @@ export default function Timeline() {
   };
 
   return (
-    <div className="glass pointer-events-auto flex items-center gap-5 px-5 py-3">
+    <div className="glass pointer-events-auto flex items-center gap-3 px-3 py-2.5 sm:gap-5 sm:px-5 sm:py-3">
       {/* play */}
       <motion.button
         onClick={togglePlay}
@@ -47,7 +47,7 @@ export default function Timeline() {
         whileHover={{ scale: 1.08 }}
         whileTap={{ scale: 0.9 }}
         transition={{ type: "spring", stiffness: 500, damping: 20 }}
-        className="grid size-11 flex-none place-items-center rounded-full text-[13px]"
+        className="grid size-10 flex-none place-items-center rounded-full text-[12px] sm:size-11 sm:text-[13px]"
         style={{
           background: playing ? "rgba(255,255,255,0.06)" : "radial-gradient(circle at 36% 30%, #ffd469, var(--gold))",
           color: playing ? "#ede7dc" : "#241a00",
@@ -64,16 +64,16 @@ export default function Timeline() {
       </motion.button>
 
       {/* month + milestone pill */}
-      <div className="flex w-[190px] flex-none items-center gap-3">
-        <div className="font-display tnum text-[15px] leading-none">
+      <div className="flex w-auto flex-none items-center gap-3 sm:w-[190px]">
+        <div className="font-display tnum text-[14px] leading-none sm:text-[15px]">
           <span className="text-foreground/55">{pm.year}</span> <span className="font-semibold text-gold">{pm.month}</span>
         </div>
       </div>
 
       {/* track */}
       <div className="relative flex-1">
-        {/* milestone labels — alternate rows so close ones (Heartwood/Canopy) don't collide */}
-        <div className="pointer-events-none absolute -top-2 left-0 h-6 w-full">
+        {/* milestone labels — hidden on small screens (they'd collide) */}
+        <div className="pointer-events-none absolute -top-2 left-0 hidden h-6 w-full sm:block">
           {MILESTONES.map(([ym, name], i) => {
             const idx = months.indexOf(ym);
             if (idx < 0) return null;
@@ -122,7 +122,7 @@ export default function Timeline() {
       {/* mode */}
       <div className="flex flex-none items-center gap-3">
         {mode === "window" && (
-          <div className="flex items-center gap-1.5">
+          <div className="hidden items-center gap-1.5 sm:flex">
             <input
               type="range" min={3} max={36} step={1} value={windowSize}
               onChange={(e) => set("windowSize", +e.target.value)}

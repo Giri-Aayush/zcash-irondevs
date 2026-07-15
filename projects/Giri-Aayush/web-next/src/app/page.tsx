@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
-import { motion } from "motion/react";
+import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { useViz } from "@/lib/store";
 import GraphCanvas from "@/components/GraphCanvas";
 import StatsBar from "@/components/StatsBar";
@@ -16,14 +16,24 @@ const rise = (dir: "left" | "top" | "bottom", delay: number) => ({
   transition: { type: "spring" as const, stiffness: 90, damping: 17, delay },
 });
 
+function SlidersIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <line x1="4" y1="8" x2="20" y2="8" /><circle cx="9" cy="8" r="2.2" fill="var(--canvas)" />
+      <line x1="4" y1="16" x2="20" y2="16" /><circle cx="15" cy="16" r="2.2" fill="var(--canvas)" />
+    </svg>
+  );
+}
+
 export default function Home() {
   const load = useViz((s) => s.load);
   const data = useViz((s) => s.data);
+  const [panelOpen, setPanelOpen] = useState(false);
   useEffect(() => { load(); }, [load]);
 
   return (
     <main className="relative h-full w-full overflow-hidden bg-canvas">
-      {/* ambient gold glow + grain */}
+      {/* ambient navy + gold glow */}
       <div
         className="breathe pointer-events-none absolute inset-0"
         style={{
@@ -45,18 +55,51 @@ export default function Home() {
         {data ? <GraphCanvas /> : <Loading />}
       </motion.div>
 
-      {/* floating chrome — spring-staggered entrance */}
-      <div className="pointer-events-none absolute inset-0 flex flex-col justify-between p-4">
-        <div className="flex items-start justify-between gap-4">
-          <motion.div {...rise("left", 0.15)}><ControlPanel /></motion.div>
+      {/* floating chrome */}
+      <div className="pointer-events-none absolute inset-0 flex flex-col justify-between p-3 sm:p-4">
+        <div className="flex items-start justify-between gap-3">
+          {/* desktop: inline control panel · mobile: a toggle button */}
+          <motion.div className="hidden md:block" {...rise("left", 0.15)}>
+            <ControlPanel />
+          </motion.div>
+          <motion.button
+            className="glass pointer-events-auto grid size-11 place-items-center rounded-xl text-gold md:hidden"
+            onClick={() => setPanelOpen(true)}
+            aria-label="Open controls"
+            {...rise("left", 0.15)}
+          >
+            <SlidersIcon />
+          </motion.button>
+
           <motion.div {...rise("top", 0.3)}><StatsBar /></motion.div>
         </div>
+
         <div className="flex justify-center">
           <motion.div className="pointer-events-auto w-full max-w-[1180px]" {...rise("bottom", 0.45)}>
             <Timeline />
           </motion.div>
         </div>
       </div>
+
+      {/* mobile control drawer */}
+      <AnimatePresence>
+        {panelOpen && (
+          <div className="md:hidden">
+            <motion.div
+              className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setPanelOpen(false)}
+            />
+            <motion.div
+              className="fixed left-0 top-0 bottom-0 z-50 w-[min(88vw,320px)] p-3"
+              initial={{ x: -340 }} animate={{ x: 0 }} exit={{ x: -340 }}
+              transition={{ type: "spring", stiffness: 280, damping: 30 }}
+            >
+              <ControlPanel onClose={() => setPanelOpen(false)} className="h-full" />
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       <Tooltip />
     </main>

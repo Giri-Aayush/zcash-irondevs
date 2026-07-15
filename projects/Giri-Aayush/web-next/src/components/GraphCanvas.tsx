@@ -88,16 +88,21 @@ export default function GraphCanvas() {
 
     refs.current = { svg, defs, zoomG, gLink, gNode, zoom, byId, patterns: new Set<string>() };
 
+    let resizeT: ReturnType<typeof setTimeout>;
     const onResize = () => {
       const r = svgRef.current!.getBoundingClientRect();
       svg.attr("viewBox", `0 0 ${r.width} ${r.height}`);
       simulation.force("center", d3.forceCenter(r.width / 2, r.height / 2));
+      simulation.alpha(0.2).restart();
+      clearTimeout(resizeT);
+      resizeT = setTimeout(() => fitView(500), 260); // re-frame after the layout re-settles
     };
     window.addEventListener("resize", onResize);
 
     update();
     return () => {
       window.removeEventListener("resize", onResize);
+      clearTimeout(resizeT);
       simulation.stop();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
