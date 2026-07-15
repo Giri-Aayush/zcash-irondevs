@@ -29,5 +29,5 @@ npm run dev        # http://localhost:3000
 npm run build      # static export -> out/
 ```
 
-`out/` is committed so the project runs with no build step (see the main
-README). After regenerating `public/graph.json`, rebuild to refresh it.
+Only source is committed. After regenerating `public/graph.json`, rebuild to
+refresh `out/`, then serve it statically (see the main README).

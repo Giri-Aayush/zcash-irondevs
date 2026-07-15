@@ -12,6 +12,7 @@ const num = (v: number | readonly number[]) => (Array.isArray(v) ? v[0] : (v as 
 export default function ControlPanel({ onClose, className }: { onClose?: () => void; className?: string }) {
   const { data, colorBy, sizeBy, sizeScale, minWeight, showBots, set } = useViz();
   const [q, setQ] = useState("");
+  const [hit, setHit] = useState(0); // keyboard-highlighted search result
   // desktop opens minimal (masthead + search); the drawer opens with tools shown
   const [open, setOpen] = useState(!!onClose);
 
@@ -77,24 +78,31 @@ export default function ControlPanel({ onClose, className }: { onClose?: () => v
       <div className="relative">
         <input
           value={q}
-          onChange={(e) => setQ(e.target.value)}
+          onChange={(e) => { setQ(e.target.value); setHit(0); }}
           onKeyDown={(e) => {
-            if (e.key === "Enter" && hits.length) { focus(hits[0].id); (e.target as HTMLInputElement).blur(); }
+            if (e.key === "ArrowDown" && hits.length) { e.preventDefault(); setHit((h) => (h + 1) % hits.length); }
+            if (e.key === "ArrowUp" && hits.length) { e.preventDefault(); setHit((h) => (h - 1 + hits.length) % hits.length); }
+            if (e.key === "Enter" && hits.length) { focus(hits[Math.min(hit, hits.length - 1)].id); (e.target as HTMLInputElement).blur(); }
             if (e.key === "Escape") setQ("");
           }}
           placeholder="Search contributors"
-          className="mono w-full rounded-lg border border-white/[0.08] bg-black/30 px-3 py-2 text-[12px] text-foreground placeholder:text-foreground/35 outline-none focus:border-gold/40"
+          className="mono w-full rounded-lg px-3 py-2 text-[12px] text-foreground outline-none"
+          style={{ background: "var(--secondary)", border: "1px solid var(--input)" }}
         />
         {hits.length > 0 && (
-          <div className="glass absolute top-full left-0 right-0 z-20 mt-1.5 flex flex-col gap-0.5 p-1">
-            {hits.map((n) => (
+          <div className="glass absolute top-full left-0 right-0 z-20 mt-1.5 flex flex-col gap-0.5 p-1" role="listbox">
+            {hits.map((n, i) => (
               <button
                 key={n.id}
+                role="option"
+                aria-selected={i === hit}
+                onMouseEnter={() => setHit(i)}
                 onClick={() => focus(n.id)}
-                className="flex items-center justify-between rounded-md px-2.5 py-1.5 text-[12px] text-foreground/70 hover:bg-white/[0.05] hover:text-foreground"
+                className="flex items-center justify-between rounded-md px-2.5 py-1.5 text-[12px]"
+                style={i === hit ? { background: "var(--accent)", color: "var(--foreground)" } : { color: "var(--muted-foreground)" }}
               >
                 <span className="truncate">{n.name}</span>
-                <span className="mono tnum text-foreground/35">{n.commits.toLocaleString()}</span>
+                <span className="mono tnum" style={{ opacity: 0.6 }}>{n.commits.toLocaleString()}</span>
               </button>
             ))}
           </div>

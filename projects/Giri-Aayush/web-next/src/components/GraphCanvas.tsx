@@ -69,17 +69,20 @@ export default function GraphCanvas() {
 
     const byId = new Map<string, GNode>(data.nodes.map((n) => [n.id, n]));
 
+    // a phone canvas is tiny: damp harder and pull weaker so a drag can't
+    // slingshot the whole network across the viewport
+    const compact = rect.width < 640;
     const simulation = d3
       .forceSimulation<GNode, GLink>()
-      .alphaDecay(0.038) // let motion carry a touch longer so it settles with spring
-      .velocityDecay(0.46) // lighter damping = more bounce; distanceMax caps still tame the spiral
-      .force("charge", d3.forceManyBody().strength(-430).distanceMax(420))
+      .alphaDecay(compact ? 0.05 : 0.038) // let motion carry a touch longer so it settles with spring
+      .velocityDecay(compact ? 0.62 : 0.46) // lighter damping = more bounce; distanceMax caps still tame the spiral
+      .force("charge", d3.forceManyBody().strength(compact ? -260 : -430).distanceMax(compact ? 280 : 420))
       .force("link", d3.forceLink<GNode, GLink>().id((d: any) => d.id)
-        .distance((l: any) => 100 / Math.sqrt(l.w || 1)).strength(0.34)) // tight, springy ties
+        .distance((l: any) => (compact ? 76 : 100) / Math.sqrt(l.w || 1)).strength(compact ? 0.22 : 0.34)) // tight, springy ties
       .force("center", d3.forceCenter(rect.width / 2, rect.height / 2))
-      .force("collide", d3.forceCollide<GNode>().radius((d) => (d.r || 4) + 12).strength(0.9))
-      .force("x", d3.forceX(rect.width / 2).strength(0.03))
-      .force("y", d3.forceY(rect.height / 2).strength(0.03))
+      .force("collide", d3.forceCollide<GNode>().radius((d) => (d.r || 4) + (compact ? 8 : 12)).strength(0.9))
+      .force("x", d3.forceX(rect.width / 2).strength(compact ? 0.05 : 0.03))
+      .force("y", d3.forceY(rect.height / 2).strength(compact ? 0.05 : 0.03))
       .on("tick", () => {
         gLink.selectAll<SVGLineElement, GLink>("line").each(function (l) {
           const a = byId.get(l.s!)!, b = byId.get(l.t!)!;
@@ -251,9 +254,9 @@ export default function GraphCanvas() {
         (u: any) => u,
         (exit: any) => exit.remove()
       )
-      .attr("stroke-opacity", 0.62)
-      // floor at 1.4 so weak ties to small nodes stay legible, never hairline
-      .attr("stroke-width", (l: GLink) => Math.min(2.6, 1.4 + Math.sqrt(l.w!) * 0.24));
+      .attr("stroke-opacity", 0.7)
+      // floor at 1.6 so weight-1 ties stay legible, never hairline
+      .attr("stroke-width", (l: GLink) => Math.min(2.7, 1.6 + Math.sqrt(l.w!) * 0.22));
 
     const nodeSel = gNode.selectAll<SVGGElement, GNode>("g.node")
       .data(nodes, (n: any) => n.id)
@@ -361,7 +364,7 @@ export default function GraphCanvas() {
       gNode.selectAll<SVGCircleElement, GNode>("circle.body")
         .attr("stroke", (n) => cm.color(n)).attr("stroke-opacity", 0.95)
         .attr("stroke-width", (n) => Math.max(1.4, n.r! * 0.14));
-      gLink.selectAll("line").attr("stroke-opacity", 0.62);
+      gLink.selectAll("line").attr("stroke-opacity", 0.7);
       return;
     }
     const w = neighborWeights(id);
@@ -390,7 +393,9 @@ export default function GraphCanvas() {
     return d3.drag<SVGGElement, GNode>()
       .on("start", (e, d) => {
         if (useViz.getState().playing) useViz.getState().set("playing", false); // interacting ends the auto-play
-        if (!e.active) sim.current!.alphaTarget(0.15).restart(); // snappier grab, springs stay responsive
+        // small screens get a gentler reheat: the whole graph is within arm's reach
+        const gentle = (svgRef.current?.getBoundingClientRect().width ?? 1000) < 640;
+        if (!e.active) sim.current!.alphaTarget(gentle ? 0.06 : 0.15).restart(); // snappy grab, springs stay responsive
         d.fx = d.x; d.fy = d.y;
       })
       .on("drag", (e, d) => { d.fx = e.x; d.fy = e.y; })

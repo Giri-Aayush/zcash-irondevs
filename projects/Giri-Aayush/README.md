@@ -24,14 +24,26 @@ visualization.
 
 ---
 
-## Run it in 5 seconds (no build)
+## See it now
 
-The visualization is **pre-built and committed** to `web-next/out/`. Serve those
-static files, no Node, npm, or build step required:
+The committed seed data is deployed at
+**[ten-years-of-zcash.netlify.app](https://ten-years-of-zcash.netlify.app)**,
+no install needed. Only source is committed here (no build artifacts), so
+running locally is one Docker command:
 
 ```bash
-python3 -m http.server 8080 -d projects/Giri-Aayush/web-next/out
-# open http://localhost:8080     (or: npx serve projects/Giri-Aayush/web-next/out)
+cd projects/Giri-Aayush
+docker build -t ten-years-of-zcash .
+docker run --rm -p 3000:3000 ten-years-of-zcash
+# open http://localhost:3000
+```
+
+Or without Docker:
+
+```bash
+cd projects/Giri-Aayush/web-next
+npm ci && npm run build
+npx serve out            # or: python3 -m http.server 8080 -d out
 ```
 
 ## Regenerate against your archive
@@ -54,8 +66,8 @@ scales unchanged from the five-repo sample to the full CodeZ mirror.
 
 **Reviewing the code?** Everything worth reading is `pipeline/*.py` (about 140
 lines each) and `web-next/src/` (`lib/graph.ts`, `lib/store.ts`,
-`components/*`). `web-next/out/` is only the compiled static output for
-zero-build running.
+`components/*`). Only source is committed; the static site is reproduced by
+`npm ci && npm run build`.
 
 ---
 
