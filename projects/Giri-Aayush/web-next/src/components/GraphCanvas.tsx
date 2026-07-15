@@ -301,6 +301,19 @@ export default function GraphCanvas() {
       .attr("opacity", (n: GNode) => (!conn(n) ? 0.35 : n.avatar ? 0.16 : 0.5))
       .transition(T()).attr("r", (n: GNode) => n.r! * 0.86);
 
+    // ambient radar pulse on connected "stations" (staggered, capped for perf)
+    gNode.selectAll("circle.station").remove();
+    const stations = new Set(
+      nodes.filter((n) => (n.deg || 0) > 0 && !n.is_bot)
+        .sort((a, b) => (nodeC.get(b.id) || 0) - (nodeC.get(a.id) || 0))
+        .slice(0, 45).map((n) => n.id)
+    );
+    gNode.selectAll<SVGGElement, GNode>("g.node").filter((n) => stations.has(n.id))
+      .insert("circle", ":first-child").attr("class", "station")
+      .attr("r", (n) => n.r!).attr("fill", "none")
+      .attr("stroke", (n) => color(n)).attr("stroke-width", 1.5)
+      .style("animation-delay", (_n, i) => `${(i % 9) * 0.38}s`);
+
     // always-on labels for the top few "whales" so the hierarchy reads instantly
     gNode.selectAll("text.whale").remove();
     const whales = new Set(
