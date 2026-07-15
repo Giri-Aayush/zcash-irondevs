@@ -30,8 +30,12 @@ export default function GraphCanvas() {
     svg.attr("viewBox", `0 0 ${rect.width} ${rect.height}`);
 
     const defs = svg.append("defs");
+    // reusable glossy sheen (white top-left highlight) for sphere bubbles
+    const sheen = defs.append("radialGradient").attr("id", "sheen").attr("cx", "34%").attr("cy", "28%").attr("r", "62%");
+    sheen.append("stop").attr("offset", "0%").attr("stop-color", "#ffffff").attr("stop-opacity", 0.5);
+    sheen.append("stop").attr("offset", "100%").attr("stop-color", "#ffffff").attr("stop-opacity", 0);
     const zoomG = svg.append("g");
-    const gLink = zoomG.append("g").attr("stroke", "#55534a");
+    const gLink = zoomG.append("g").attr("stroke", "#4a5573");
     const gNode = zoomG.append("g");
 
     const zoom = d3
@@ -105,6 +109,25 @@ export default function GraphCanvas() {
     return `url(#${pid})`;
   }
 
+  // Bubblemaps-style glossy sphere + colored glow halo, one gradient pair per color
+  function grads(color: string) {
+    const { defs, patterns } = refs.current;
+    const key = "g" + color.replace(/\W/g, "");
+    if (!patterns.has(key)) {
+      patterns.add(key);
+      const glow = defs.append("radialGradient").attr("id", "glow" + key);
+      glow.append("stop").attr("offset", "0%").attr("stop-color", color).attr("stop-opacity", 0.6);
+      glow.append("stop").attr("offset", "70%").attr("stop-color", color).attr("stop-opacity", 0.12);
+      glow.append("stop").attr("offset", "100%").attr("stop-color", color).attr("stop-opacity", 0);
+      const c = d3.color(color)!;
+      const sph = defs.append("radialGradient").attr("id", "sph" + key).attr("cx", "36%").attr("cy", "30%").attr("r", "75%");
+      sph.append("stop").attr("offset", "0%").attr("stop-color", String(c.brighter(1.1)));
+      sph.append("stop").attr("offset", "58%").attr("stop-color", color);
+      sph.append("stop").attr("offset", "100%").attr("stop-color", String(c.darker(1.4)));
+    }
+    return { glow: `url(#glow${key})`, sphere: `url(#sph${key})` };
+  }
+
   function visible() {
     const st = useViz.getState();
     const nodes: GNode[] = [];
@@ -165,14 +188,17 @@ export default function GraphCanvas() {
         (u: any) => u,
         (exit: any) => exit.remove()
       )
-      .attr("stroke-width", (l: GLink) => Math.min(4, 0.5 + Math.sqrt(l.w!)));
+      .attr("stroke-opacity", 0.32)
+      .attr("stroke-width", (l: GLink) => Math.min(2.4, 0.35 + Math.sqrt(l.w!) * 0.4));
 
     const nodeSel = gNode.selectAll<SVGGElement, GNode>("g.node")
       .data(nodes, (n: any) => n.id)
       .join(
         (enter: any) => {
           const g = enter.append("g").attr("class", "node").style("cursor", "pointer");
-          g.append("circle").attr("stroke", "#0c0b0a").attr("stroke-width", 1.2);
+          g.append("circle").attr("class", "halo").attr("pointer-events", "none");   // colored glow
+          g.append("circle").attr("class", "body");                                   // sphere / avatar
+          g.append("circle").attr("class", "sheen").attr("pointer-events", "none");    // glossy highlight
           g.call(drag());
           g.on("mouseenter", (_e: any, n: GNode) => { useViz.getState().set("hovered", n.id); if (!useViz.getState().selected) applyHighlight(n.id); })
             .on("mouseleave", () => { useViz.getState().set("hovered", null); if (!useViz.getState().selected) applyHighlight(null); })
@@ -182,12 +208,23 @@ export default function GraphCanvas() {
         (u: any) => u,
         (exit: any) => exit.remove()
       );
-    nodeSel.select("circle")
+    nodeSel.select("circle.halo")
+      .attr("r", (n: GNode) => n.r! * 2.1)
+      .attr("fill", (n: GNode) => grads(color(n)).glow)
+      .attr("opacity", (n: GNode) => (n.is_bot ? 0.25 : 0.9));
+    nodeSel.select("circle.body")
       .attr("r", (n: GNode) => n.r!)
-      .attr("fill", (n: GNode) => (n.avatar ? avatarFill(n) : color(n)))
-      .attr("fill-opacity", (n: GNode) => (n.is_bot ? 0.5 : n.avatar ? 1 : 0.92))
-      .attr("stroke", (n: GNode) => (n.avatar ? color(n) : "#0c0b0a"))
-      .attr("stroke-width", (n: GNode) => (n.avatar ? Math.max(1.6, n.r! * 0.2) : 1.2));
+      .attr("fill", (n: GNode) => (n.avatar ? avatarFill(n) : grads(color(n)).sphere))
+      .attr("fill-opacity", (n: GNode) => (n.is_bot ? 0.45 : 1))
+      .attr("stroke", (n: GNode) => color(n))
+      .attr("stroke-opacity", 0.95)
+      .attr("stroke-width", (n: GNode) => Math.max(1.4, n.r! * 0.14));
+    nodeSel.select("circle.sheen")
+      .attr("r", (n: GNode) => n.r! * 0.86)
+      .attr("cx", (n: GNode) => -n.r! * 0.12)
+      .attr("cy", (n: GNode) => -n.r! * 0.14)
+      .attr("fill", "url(#sheen)")
+      .attr("opacity", (n: GNode) => (n.avatar ? 0.16 : 0.5));
 
     refs.current.svg.on("click", () => useViz.getState().set("selected", null));
 
@@ -210,18 +247,21 @@ export default function GraphCanvas() {
   function applyHighlight(id: string | null) {
     const { gNode, gLink } = refs.current;
     gNode.selectAll<SVGGElement, GNode>("g.node").selectAll("text.lbl").remove();
+    const cm = buildColorModel(data!.nodes, useViz.getState().colorBy);
     if (!id) {
       gNode.selectAll<SVGGElement, GNode>("g.node").style("opacity", 1);
-      gNode.selectAll("circle").attr("stroke-width", (n: any) => (n.avatar ? Math.max(1.6, n.r * 0.2) : 1.2)).attr("stroke", (n: any) => (n.avatar ? buildColorModel(data!.nodes, useViz.getState().colorBy).color(n) : "#0c0b0a"));
-      gLink.selectAll("line").attr("stroke-opacity", 0.5);
+      gNode.selectAll<SVGCircleElement, GNode>("circle.body")
+        .attr("stroke", (n) => cm.color(n)).attr("stroke-opacity", 0.95)
+        .attr("stroke-width", (n) => Math.max(1.4, n.r! * 0.14));
+      gLink.selectAll("line").attr("stroke-opacity", 0.32);
       return;
     }
     const w = neighborWeights(id);
     const keep = new Set(w.keys()); keep.add(id);
-    gNode.selectAll<SVGGElement, GNode>("g.node").style("opacity", (n) => (keep.has(n.id) ? 1 : 0.12));
+    gNode.selectAll<SVGGElement, GNode>("g.node").style("opacity", (n) => (keep.has(n.id) ? 1 : 0.1));
     gNode.selectAll<SVGGElement, GNode>("g.node").filter((n) => n.id === id)
-      .select("circle").attr("stroke", "#ede7dc").attr("stroke-width", 2);
-    gLink.selectAll<SVGLineElement, GLink>("line").attr("stroke-opacity", (l) => (l.s === id || l.t === id ? 0.55 : 0.04));
+      .select("circle.body").attr("stroke", "#ffffff").attr("stroke-opacity", 1).attr("stroke-width", (n) => Math.max(2, n.r! * 0.16));
+    gLink.selectAll<SVGLineElement, GLink>("line").attr("stroke-opacity", (l) => (l.s === id || l.t === id ? 0.6 : 0.03));
     const top = [...w.entries()].sort((a, b) => b[1] - a[1]).slice(0, 12).map((d) => d[0]);
     const labels = new Set(top); labels.add(id);
     gNode.selectAll<SVGGElement, GNode>("g.node").filter((n) => labels.has(n.id))

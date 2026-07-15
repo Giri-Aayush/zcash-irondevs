@@ -18,7 +18,11 @@ export default function Home() {
       {/* ambient gold glow + grain */}
       <div
         className="pointer-events-none absolute inset-0"
-        style={{ background: "radial-gradient(120% 90% at 55% 40%, rgba(244,183,40,0.06), transparent 55%)" }}
+        style={{
+          background:
+            "radial-gradient(90% 70% at 52% 42%, rgba(90,110,180,0.10), transparent 60%)," +
+            "radial-gradient(60% 50% at 52% 42%, rgba(244,183,40,0.05), transparent 65%)",
+        }}
       />
       <div
         className="pointer-events-none absolute inset-0 z-40 opacity-[0.035] mix-blend-soft-light"

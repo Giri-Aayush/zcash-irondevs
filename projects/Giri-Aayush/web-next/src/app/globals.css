@@ -37,11 +37,11 @@
 
 /* ── Ten Years of Zcash — instrument design system ── */
 :root {
-  --canvas: #0c0b0a;
+  --canvas: #090d16;
   --gold: #f4b728;
   --hairline: rgba(255, 255, 255, 0.07);
 
-  --background: #0c0b0a;
+  --background: #090d16;
   --foreground: #ede7dc;
   --card: rgba(20, 19, 18, 0.8);
   --card-foreground: #ede7dc;
@@ -77,7 +77,7 @@
 @layer utilities {
   /* floating glass panel — the signature surface */
   .glass {
-    background: rgba(20, 19, 18, 0.8);
+    background: rgba(13, 17, 27, 0.72);
     border: 1px solid var(--hairline);
     border-radius: 12px;
     backdrop-filter: blur(18px) saturate(1.25);
