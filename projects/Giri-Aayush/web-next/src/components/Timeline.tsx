@@ -16,9 +16,15 @@ export default function Timeline() {
     const n = data.meta.n_months;
     if (month >= n - 1) setMonth(0);
     const id = setInterval(() => {
-      const cur = useViz.getState().month;
-      if (cur >= n - 1) { set("playing", false); return; }
-      setMonth(cur + 1);
+      const st = useViz.getState();
+      if (st.month >= n - 1) {
+        set("playing", false);
+        // the story ends where exploration begins: reveal the clean network,
+        // the leaderboard rail, and the full control surface
+        if (st.story) { set("story", false); set("minWeight", st.cleanMinWeight); }
+        return;
+      }
+      setMonth(st.month + 1);
     }, 360);
     return () => clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
