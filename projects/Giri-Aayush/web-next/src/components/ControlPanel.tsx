@@ -53,7 +53,7 @@ export default function ControlPanel({ onClose, className }: { onClose?: () => v
         <button
           onClick={onClose}
           aria-label="Close controls"
-          className="absolute right-3 top-3 z-10 grid size-7 place-items-center rounded-md text-foreground/50 hover:bg-white/[0.06] hover:text-foreground"
+          className="absolute right-2 top-2 z-10 grid size-11 place-items-center rounded-md text-foreground/50 hover:bg-white/[0.06] hover:text-foreground sm:size-7"
         >
           ✕
         </button>
@@ -86,8 +86,7 @@ export default function ControlPanel({ onClose, className }: { onClose?: () => v
             if (e.key === "Escape") setQ("");
           }}
           placeholder="Search contributors"
-          className="mono w-full rounded-lg px-3 py-2 text-[12px] text-foreground outline-none"
-          style={{ background: "var(--secondary)", border: "1px solid var(--input)" }}
+          className="search-input mono w-full rounded-lg px-3 py-2 text-[12px] text-foreground outline-none"
         />
         {hits.length > 0 && (
           <div className="glass absolute top-full left-0 right-0 z-20 mt-1.5 flex flex-col gap-0.5 p-1" role="listbox">

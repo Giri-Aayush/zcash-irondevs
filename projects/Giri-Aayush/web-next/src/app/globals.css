@@ -162,11 +162,39 @@
   }
 }
 
+/* keyboard focus is always visible, gold ring on any focusable */
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+button:not(:disabled) {
+  cursor: pointer;
+}
+
+/* the search field: tokenized surface with a visible focus border */
+.search-input {
+  background: var(--secondary);
+  border: 1px solid var(--input);
+}
+.search-input:focus {
+  border-color: var(--ring);
+}
+
 @keyframes breathe {
   0%, 100% { opacity: 0.7; transform: scale(1); }
   50% { opacity: 1; transform: scale(1.05); }
 }
 .breathe { animation: breathe 10s ease-in-out infinite; }
+
+/* respect the user's motion preference: the network stays fully usable static */
+@media (prefers-reduced-motion: reduce) {
+  .link, .station, .ping, .breathe {
+    animation: none !important;
+  }
+  body, .glass, text.whale, text.lbl {
+    transition: none !important;
+  }
+}
 
 /* ambient depth glow, themed so light mode stays clean */
 .ambient {

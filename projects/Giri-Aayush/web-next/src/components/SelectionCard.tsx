@@ -42,7 +42,7 @@ export default function SelectionCard() {
           <button
             onClick={() => set("selected", null)}
             aria-label="Close"
-            className="absolute right-3 top-3 grid size-7 place-items-center rounded-md text-foreground/45 hover:bg-white/[0.06] hover:text-foreground"
+            className="absolute right-2 top-2 grid size-11 place-items-center rounded-md text-foreground/45 hover:bg-white/[0.06] hover:text-foreground sm:right-3 sm:top-3 sm:size-7"
           >
             ✕
           </button>

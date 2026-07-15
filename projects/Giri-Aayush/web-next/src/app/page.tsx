@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, MotionConfig, motion } from "motion/react";
 import { useViz } from "@/lib/store";
 import GraphCanvas from "@/components/GraphCanvas";
 import StatsBar from "@/components/StatsBar";
@@ -35,6 +35,9 @@ export default function Home() {
   useEffect(() => { load(); }, [load]);
 
   return (
+    // reducedMotion="user": every Framer entrance/spring collapses to a fade
+    // when the OS asks for less motion
+    <MotionConfig reducedMotion="user">
     <main className="relative h-full w-full overflow-hidden bg-canvas">
       {/* ambient navy + gold glow */}
       <div className="ambient breathe pointer-events-none absolute inset-0" />
@@ -104,6 +107,7 @@ export default function Home() {
       <StoryCaption />
       <Tooltip />
     </main>
+    </MotionConfig>
   );
 }
 

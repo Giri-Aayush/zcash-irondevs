@@ -47,7 +47,7 @@ export default function Timeline() {
         whileHover={{ scale: 1.08 }}
         whileTap={{ scale: 0.9 }}
         transition={{ type: "spring", stiffness: 500, damping: 20 }}
-        className="grid size-10 flex-none place-items-center rounded-full text-[12px] sm:size-11 sm:text-[13px]"
+        className="grid size-11 flex-none place-items-center rounded-full text-[12px] sm:text-[13px]"
         style={{
           background: playing ? "var(--secondary)" : "radial-gradient(circle at 36% 30%, #ffd469, var(--gold))",
           color: playing ? "var(--foreground)" : "#241a00",
