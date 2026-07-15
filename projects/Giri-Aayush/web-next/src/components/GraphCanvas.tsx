@@ -71,15 +71,15 @@ export default function GraphCanvas() {
 
     const simulation = d3
       .forceSimulation<GNode, GLink>()
-      .alphaDecay(0.03)
-      .velocityDecay(0.42)
-      .force("charge", d3.forceManyBody().strength(-620).distanceMax(900))
+      .alphaDecay(0.045)
+      .velocityDecay(0.6) // heavier damping so a drag can't set the far side oscillating
+      .force("charge", d3.forceManyBody().strength(-430).distanceMax(420))
       .force("link", d3.forceLink<GNode, GLink>().id((d: any) => d.id)
-        .distance((l: any) => 120 / Math.sqrt(l.w || 1)).strength(0.25))
+        .distance((l: any) => 110 / Math.sqrt(l.w || 1)).strength(0.12))
       .force("center", d3.forceCenter(rect.width / 2, rect.height / 2))
-      .force("collide", d3.forceCollide<GNode>().radius((d) => (d.r || 4) + 12).strength(0.9))
-      .force("x", d3.forceX(rect.width / 2).strength(0.012))
-      .force("y", d3.forceY(rect.height / 2).strength(0.012))
+      .force("collide", d3.forceCollide<GNode>().radius((d) => (d.r || 4) + 12).strength(0.85))
+      .force("x", d3.forceX(rect.width / 2).strength(0.02))
+      .force("y", d3.forceY(rect.height / 2).strength(0.02))
       .on("tick", () => {
         gLink.selectAll<SVGLineElement, GLink>("line").each(function (l) {
           const a = byId.get(l.s!)!, b = byId.get(l.t!)!;
@@ -338,6 +338,7 @@ export default function GraphCanvas() {
   function applyHighlight(id: string | null) {
     const { gNode, gLink } = refs.current;
     gNode.selectAll<SVGGElement, GNode>("g.node").selectAll("text.lbl").remove();
+    gNode.selectAll("circle.ping").remove(); // clear any prior radar ping
     const cm = buildColorModel(data!.nodes, useViz.getState().colorBy);
     if (!id) {
       gNode.selectAll<SVGGElement, GNode>("g.node").style("opacity", 1);
@@ -350,8 +351,12 @@ export default function GraphCanvas() {
     const w = neighborWeights(id);
     const keep = new Set(w.keys()); keep.add(id);
     gNode.selectAll<SVGGElement, GNode>("g.node").style("opacity", (n) => (keep.has(n.id) ? 1 : 0.1));
-    gNode.selectAll<SVGGElement, GNode>("g.node").filter((n) => n.id === id)
-      .select("circle.body").attr("stroke", "#ffffff").attr("stroke-opacity", 1).attr("stroke-width", (n) => Math.max(2, n.r! * 0.16));
+    const focus = gNode.selectAll<SVGGElement, GNode>("g.node").filter((n) => n.id === id);
+    focus.select("circle.body").attr("stroke", "#ffffff").attr("stroke-opacity", 1).attr("stroke-width", (n) => Math.max(2, n.r! * 0.16));
+    // radar ping emanating from the focused node
+    focus.insert("circle", ":first-child").attr("class", "ping")
+      .attr("r", (n) => n.r!).attr("fill", "none")
+      .attr("stroke", (n) => cm.color(n)).attr("stroke-width", 2);
     gLink.selectAll<SVGLineElement, GLink>("line").attr("stroke-opacity", (l) => (l.s === id || l.t === id ? 0.6 : 0.03));
     const top = [...w.entries()].sort((a, b) => b[1] - a[1]).slice(0, 12).map((d) => d[0]);
     const labels = new Set(top); labels.add(id);
@@ -365,7 +370,11 @@ export default function GraphCanvas() {
 
   function drag() {
     return d3.drag<SVGGElement, GNode>()
-      .on("start", (e, d) => { if (!e.active) sim.current!.alphaTarget(0.2).restart(); d.fx = d.x; d.fy = d.y; })
+      .on("start", (e, d) => {
+        if (useViz.getState().playing) useViz.getState().set("playing", false); // interacting ends the auto-play
+        if (!e.active) sim.current!.alphaTarget(0.08).restart(); // gentle reheat, no wild fling
+        d.fx = d.x; d.fy = d.y;
+      })
       .on("drag", (e, d) => { d.fx = e.x; d.fy = e.y; })
       .on("end", (e, d) => { if (!e.active) sim.current!.alphaTarget(0); d.fx = null; d.fy = null; });
   }
