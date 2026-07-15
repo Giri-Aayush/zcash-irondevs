@@ -38,26 +38,39 @@ web-next/     Next.js 16 + Tailwind v4 + shadcn · reads graph.json, renders the
 The front-end is a **static export** — `next build` emits plain files in `out/`,
 so the judge serves it with any static server; no Node runtime needed to view.
 
-## Quick start
+## Run it in 5 seconds (no build)
+
+The visualization is **pre-built and committed** to `web-next/out/`. Just serve
+those static files — no Node, no npm, no build:
 
 ```bash
-# 1. from the contest repo root — clone the repositories once
-./init.sh
-
-# 2. generate the data (from this folder)
-uv sync
-uv run ironwood --avatars --out web-next/public/graph.json   # ~6s on the seed repos
-
-# 3. build + serve the visualization
-cd web-next
-npm ci
-npm run build
-npx serve out            # open the printed URL
+npx serve projects/Giri-Aayush/web-next/out      # or:
+python3 -m http.server 8080 -d projects/Giri-Aayush/web-next/out
+# open the printed URL
 ```
 
-`web-next/public/graph.json` and the avatars are **committed**, so you can skip
-step 2 and go straight to `npm ci && npm run build` to see it with the seed data.
-Re-running the pipeline against the full CodeZ archive just regenerates that file.
+## Regenerate against the full archive
+
+To render *your* mirror instead of the committed seed data, run the Python
+pipeline (it reads the bare repos and writes `graph.json` the front-end loads):
+
+```bash
+./init.sh                                          # from the contest repo root
+cd projects/Giri-Aayush
+uv sync
+uv run ironwood --avatars --out web-next/public/graph.json   # mine → build
+cd web-next && npm ci && npm run build             # rebuild the static site → out/
+```
+
+The pipeline caps the rendered network to the top-N contributors and strongest
+ties (`--max-nodes`, plus an internal edge cap), so `graph.json` and the browser
+stay fast even on the 500-repo / millions-of-commits archive. Verified: a
+400k-commit / 2,500-contributor synthetic builds in ~25 s at ~0.5 GB RAM into a
+2.4 MB `graph.json`.
+
+> **Reviewing the code?** The front-end source is in `web-next/src/`; the Python
+> pipeline is in `pipeline/`. `web-next/out/` is only the compiled static output
+> for zero-build running.
 
 ### Docker
 

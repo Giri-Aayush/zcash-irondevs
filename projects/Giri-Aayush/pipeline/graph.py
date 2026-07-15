@@ -46,11 +46,13 @@ def _month_labels(lo: tuple[int, int], hi: tuple[int, int]) -> list[str]:
 
 
 def build(records: list[dict], *, window_years: float = 0.0, avatars: dict | None = None,
-          max_nodes: int = 500) -> dict:
+          max_nodes: int = 500, max_edges: int = 8000) -> dict:
     """Return a JSON-serializable graph document from mined commit records.
 
-    ``max_nodes`` caps the rendered network to the most prolific contributors so
-    the output stays bounded on the full archive (0 = no cap).
+    ``max_nodes`` caps the rendered network to the most prolific contributors and
+    ``max_edges`` keeps only the strongest ties, so the output (and browser load)
+    stay bounded on the full archive regardless of how dense the core is
+    (0 = no cap). On the seed data both are no-ops.
     """
     avatars = avatars or {}
     if not records:
@@ -228,6 +230,8 @@ def build(records: list[dict], *, window_years: float = 0.0, avatars: dict | Non
             }
         )
     links_out.sort(key=lambda l: -l["weight"])
+    if max_edges > 0 and len(links_out) > max_edges:
+        links_out = links_out[:max_edges]  # keep the strongest ties; bounds graph.json + render
 
     return {
         "meta": {
