@@ -252,8 +252,9 @@ export default function GraphCanvas() {
         (u: any) => u,
         (exit: any) => exit.remove()
       )
-      .attr("stroke-opacity", 0.52)
-      .attr("stroke-width", (l: GLink) => Math.min(2.4, 0.95 + Math.sqrt(l.w!) * 0.32));
+      .attr("stroke-opacity", 0.62)
+      // floor at 1.4 so weak ties to small nodes stay legible, never hairline
+      .attr("stroke-width", (l: GLink) => Math.min(2.6, 1.4 + Math.sqrt(l.w!) * 0.24));
 
     const nodeSel = gNode.selectAll<SVGGElement, GNode>("g.node")
       .data(nodes, (n: any) => n.id)
@@ -361,7 +362,7 @@ export default function GraphCanvas() {
       gNode.selectAll<SVGCircleElement, GNode>("circle.body")
         .attr("stroke", (n) => cm.color(n)).attr("stroke-opacity", 0.95)
         .attr("stroke-width", (n) => Math.max(1.4, n.r! * 0.14));
-      gLink.selectAll("line").attr("stroke-opacity", 0.52);
+      gLink.selectAll("line").attr("stroke-opacity", 0.62);
       return;
     }
     const w = neighborWeights(id);

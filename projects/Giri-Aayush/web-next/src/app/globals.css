@@ -174,8 +174,9 @@
 }
 
 /* ties flow like the monitoring-map arcs (calm, slow) */
-@keyframes flowDash { to { stroke-dashoffset: -18; } }
-.link { stroke: var(--graph-link); stroke-dasharray: 6 3; animation: flowDash 2.4s linear infinite; }
+@keyframes flowDash { to { stroke-dashoffset: -26; } }
+/* mostly-ink dash so long weak ties read as lines, not dotted fragments */
+.link { stroke: var(--graph-link); stroke-dasharray: 10 3; animation: flowDash 2.6s linear infinite; }
 
 /* node labels read their ink + halo from the theme, so a toggle re-colors them live */
 text.whale { fill: var(--graph-ink); stroke: var(--graph-ink-halo); }
