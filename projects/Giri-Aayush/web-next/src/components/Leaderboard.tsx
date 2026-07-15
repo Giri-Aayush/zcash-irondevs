@@ -35,8 +35,31 @@ export default function Leaderboard() {
 
   const open = !story && !selected;
 
+  // during the story, a slim chip marks where the rail lives; clicking it
+  // skips ahead into explore with the leaderboard open
+  const chip = story && !selected;
+
   return (
     <AnimatePresence>
+      {chip && (
+        <motion.button
+          key="chip"
+          initial={{ x: 24, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          exit={{ x: 24, opacity: 0 }}
+          transition={{ type: "spring", stiffness: 260, damping: 28 }}
+          onClick={() => {
+            const st = useViz.getState();
+            set("story", false);
+            set("playing", false);
+            set("minWeight", st.cleanMinWeight);
+            setMonth(data.meta.n_months - 1);
+          }}
+          className="glass label pointer-events-auto absolute right-3 top-24 z-20 hidden items-center gap-2 px-3.5 py-2.5 lg:flex"
+        >
+          <span className="text-gold">◈</span> Top contributors
+        </motion.button>
+      )}
       {open && (
         <motion.aside
           initial={{ x: 32, opacity: 0 }}
