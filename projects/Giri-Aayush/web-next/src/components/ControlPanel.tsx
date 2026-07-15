@@ -28,6 +28,17 @@ export default function ControlPanel({ onClose, className }: { onClose?: () => v
 
   if (!data) return null;
 
+  // jump to a searched person: leave the story, show the full network, focus them
+  const focus = (id: string) => {
+    const st = useViz.getState();
+    set("story", false);
+    set("playing", false);
+    set("minWeight", st.cleanMinWeight);
+    st.setMonth(data.meta.n_months - 1);
+    set("selected", id);
+    setQ("");
+  };
+
   return (
     <div className={`glass pointer-events-auto relative flex w-full max-w-[288px] flex-col gap-[18px] overflow-y-auto p-4 pl-5 md:w-[272px] md:max-h-[calc(100dvh-2rem)] ${className || ""}`}>
       {/* signature: a thin gold accent down the left edge */}
@@ -64,6 +75,10 @@ export default function ControlPanel({ onClose, className }: { onClose?: () => v
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && hits.length) { focus(hits[0].id); (e.target as HTMLInputElement).blur(); }
+            if (e.key === "Escape") setQ("");
+          }}
           placeholder="Search contributors"
           className="mono w-full rounded-lg border border-white/[0.08] bg-black/30 px-3 py-2 text-[12px] text-foreground placeholder:text-foreground/35 outline-none focus:border-gold/40"
         />
@@ -72,7 +87,7 @@ export default function ControlPanel({ onClose, className }: { onClose?: () => v
             {hits.map((n) => (
               <button
                 key={n.id}
-                onClick={() => { set("selected", n.id); setQ(""); }}
+                onClick={() => focus(n.id)}
                 className="flex items-center justify-between rounded-md px-2.5 py-1.5 text-[12px] text-foreground/70 hover:bg-white/[0.05] hover:text-foreground"
               >
                 <span className="truncate">{n.name}</span>

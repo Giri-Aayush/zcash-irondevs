@@ -143,10 +143,13 @@ export default function GraphCanvas() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected]);
 
-  // when the story ends and exploration begins, re-frame the (decluttered) network
+  // when the story ends and exploration begins, re-frame the (decluttered) network,
+  // unless a specific person is being focused (search jump) — then let recenter win
   useEffect(() => {
     if (story || !sim.current) return;
-    const t = setTimeout(() => refs.current.fitView?.(750), 480);
+    const t = setTimeout(() => {
+      if (!useViz.getState().selected) refs.current.fitView?.(750);
+    }, 480);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [story]);
@@ -418,9 +421,11 @@ export default function GraphCanvas() {
     const n = refs.current.byId?.get(id);
     if (!n || n.x == null || n.y == null) return;
     const s = svgRef.current!.getBoundingClientRect();
-    refs.current.svg.transition().duration(700).ease(d3.easeCubicInOut).call(
+    // d3-zoom interpolates transforms with interpolateZoom, giving a smooth
+    // fly-across-the-mesh (zoom out, pan, zoom in). A longer duration reads as travel.
+    refs.current.svg.transition().duration(1050).ease(d3.easeCubicInOut).call(
       refs.current.zoom.transform,
-      d3.zoomIdentity.translate(s.width / 2, s.height / 2).scale(1.7).translate(-n.x, -n.y)
+      d3.zoomIdentity.translate(s.width / 2, s.height / 2).scale(1.85).translate(-n.x, -n.y)
     );
   }
 
