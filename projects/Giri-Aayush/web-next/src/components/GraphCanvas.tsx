@@ -1,0 +1,262 @@
+"use client";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+import { useEffect, useRef } from "react";
+import * as d3 from "d3";
+import { useViz } from "@/lib/store";
+import {
+  buildColorModel,
+  linkWeight,
+  nodeCommits,
+  type GLink,
+  type GNode,
+} from "@/lib/graph";
+
+export default function GraphCanvas() {
+  const svgRef = useRef<SVGSVGElement>(null);
+  const sim = useRef<d3.Simulation<GNode, GLink> | null>(null);
+  const refs = useRef<any>({});
+
+  const {
+    data, month, mode, windowSize, colorBy, sizeScale, minWeight, showBots, selected,
+  } = useViz();
+
+  // ── one-time setup ──
+  useEffect(() => {
+    if (!svgRef.current || !data) return;
+    const svg = d3.select(svgRef.current);
+    svg.selectAll("*").remove();
+    const rect = svgRef.current.getBoundingClientRect();
+    svg.attr("viewBox", `0 0 ${rect.width} ${rect.height}`);
+
+    const defs = svg.append("defs");
+    const zoomG = svg.append("g");
+    const gLink = zoomG.append("g").attr("stroke", "#55534a");
+    const gNode = zoomG.append("g");
+
+    const zoom = d3
+      .zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.2, 6])
+      .on("zoom", (e) => zoomG.attr("transform", e.transform));
+    svg.call(zoom as any);
+
+    const byId = new Map<string, GNode>(data.nodes.map((n) => [n.id, n]));
+
+    const simulation = d3
+      .forceSimulation<GNode, GLink>()
+      .alphaDecay(0.035)
+      .velocityDecay(0.45)
+      .force("charge", d3.forceManyBody().strength(-190).distanceMax(520))
+      .force("link", d3.forceLink<GNode, GLink>().id((d: any) => d.id)
+        .distance((l: any) => 70 / Math.sqrt(l.w || 1)).strength(0.35))
+      .force("center", d3.forceCenter(rect.width / 2, rect.height / 2))
+      .force("collide", d3.forceCollide<GNode>().radius((d) => (d.r || 4) + 4))
+      .force("x", d3.forceX(rect.width / 2).strength(0.02))
+      .force("y", d3.forceY(rect.height / 2).strength(0.02))
+      .on("tick", () => {
+        gLink.selectAll<SVGLineElement, GLink>("line")
+          .attr("x1", (l) => byId.get(l.s!)!.x!)
+          .attr("y1", (l) => byId.get(l.s!)!.y!)
+          .attr("x2", (l) => byId.get(l.t!)!.x!)
+          .attr("y2", (l) => byId.get(l.t!)!.y!);
+        gNode.selectAll<SVGGElement, GNode>("g.node").attr("transform", (n) => `translate(${n.x},${n.y})`);
+        // fit once the layout has actually settled (not mid-explosion)
+        if (!refs.current.didFit && simulation.alpha() < 0.06) {
+          refs.current.didFit = true;
+          fitView(600);
+        }
+      });
+    sim.current = simulation;
+
+    refs.current = { svg, defs, zoomG, gLink, gNode, zoom, byId, patterns: new Set<string>() };
+
+    const onResize = () => {
+      const r = svgRef.current!.getBoundingClientRect();
+      svg.attr("viewBox", `0 0 ${r.width} ${r.height}`);
+      simulation.force("center", d3.forceCenter(r.width / 2, r.height / 2));
+    };
+    window.addEventListener("resize", onResize);
+
+    update();
+    return () => {
+      window.removeEventListener("resize", onResize);
+      simulation.stop();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
+
+  // ── react to control changes ──
+  useEffect(() => { if (sim.current) update(); // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [month, mode, windowSize, colorBy, sizeScale, minWeight, showBots]);
+
+  useEffect(() => { if (sim.current) applyHighlight(selected); // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected]);
+
+  function avatarFill(n: GNode) {
+    const { defs, patterns } = refs.current;
+    const pid = "av-" + (n.avatar || "").replace(/\W/g, "");
+    if (!patterns.has(pid)) {
+      patterns.add(pid);
+      const p = defs.append("pattern").attr("id", pid)
+        .attr("patternContentUnits", "objectBoundingBox").attr("width", 1).attr("height", 1);
+      p.append("image").attr("href", n.avatar).attr("width", 1).attr("height", 1)
+        .attr("preserveAspectRatio", "xMidYMid slice");
+    }
+    return `url(#${pid})`;
+  }
+
+  function visible() {
+    const st = useViz.getState();
+    const nodes: GNode[] = [];
+    const nodeC = new Map<string, number>();
+    for (const n of data!.nodes) {
+      if (n.is_bot && !st.showBots) continue;
+      const c = nodeCommits(n, st.month, st.mode, st.windowSize);
+      if (c <= 0) continue;
+      nodeC.set(n.id, c);
+      nodes.push(n);
+    }
+    const vis = new Set(nodes.map((n) => n.id));
+    const links: GLink[] = [];
+    const degree = new Map<string, number>();
+    for (const l of data!.links) {
+      if (!vis.has(l.s!) || !vis.has(l.t!)) continue;
+      const w = linkWeight(l, st.month, st.mode, st.windowSize);
+      if (w < st.minWeight) continue;
+      l.w = w;
+      links.push(l);
+      degree.set(l.s!, (degree.get(l.s!) || 0) + 1);
+      degree.set(l.t!, (degree.get(l.t!) || 0) + 1);
+    }
+    const outNodes = st.minWeight > 1 ? nodes.filter((n) => (degree.get(n.id) || 0) > 0) : nodes;
+    return { nodes: outNodes, links, nodeC, degree };
+  }
+
+  function update() {
+    const st = useViz.getState();
+    const { gNode, gLink, byId } = refs.current;
+    const { nodes, links, nodeC, degree } = visible();
+    const model = buildColorModel(data!.nodes, st.colorBy);
+    const color = (n: GNode) => model.color(n);
+
+    const val = (n: GNode) => nodeC.get(n.id) || 0;
+    const rScale = d3.scaleSqrt().domain([0, d3.max(nodes, val) || 1]).range([3, 24]);
+    const scale = st.sizeScale;
+
+    const rect = svgRef.current!.getBoundingClientRect();
+    const prev = new Set(sim.current!.nodes().map((n) => n.id));
+    let added = 0;
+    for (const l of links) {
+      const na = byId.get(l.s!), nb = byId.get(l.t!);
+      if (na && na.x == null && nb && nb.x != null) { na.x = nb.x + (Math.random() - 0.5) * 40; na.y = nb.y! + (Math.random() - 0.5) * 40; }
+    }
+    for (const n of nodes) {
+      if (n.x == null) { n.x = rect.width / 2 + (Math.random() - 0.5) * 80; n.y = rect.height / 2 + (Math.random() - 0.5) * 80; }
+      n.r = rScale(val(n)) * scale;
+      if (!prev.has(n.id)) added++;
+    }
+
+    gLink.selectAll<SVGLineElement, GLink>("line")
+      .data(links, (l: any) => l.s + "|" + l.t)
+      .join(
+        (enter: any) => enter.append("line").attr("class", "link").attr("stroke-opacity", 0.5),
+        (u: any) => u,
+        (exit: any) => exit.remove()
+      )
+      .attr("stroke-width", (l: GLink) => Math.min(4, 0.5 + Math.sqrt(l.w!)));
+
+    const nodeSel = gNode.selectAll<SVGGElement, GNode>("g.node")
+      .data(nodes, (n: any) => n.id)
+      .join(
+        (enter: any) => {
+          const g = enter.append("g").attr("class", "node").style("cursor", "pointer");
+          g.append("circle").attr("stroke", "#0c0b0a").attr("stroke-width", 1.2);
+          g.call(drag());
+          g.on("mouseenter", (_e: any, n: GNode) => { useViz.getState().set("hovered", n.id); if (!useViz.getState().selected) applyHighlight(n.id); })
+            .on("mouseleave", () => { useViz.getState().set("hovered", null); if (!useViz.getState().selected) applyHighlight(null); })
+            .on("click", (e: any, n: GNode) => { e.stopPropagation(); const cur = useViz.getState().selected; useViz.getState().set("selected", cur === n.id ? null : n.id); });
+          return g;
+        },
+        (u: any) => u,
+        (exit: any) => exit.remove()
+      );
+    nodeSel.select("circle")
+      .attr("r", (n: GNode) => n.r!)
+      .attr("fill", (n: GNode) => (n.avatar ? avatarFill(n) : color(n)))
+      .attr("fill-opacity", (n: GNode) => (n.is_bot ? 0.5 : n.avatar ? 1 : 0.92))
+      .attr("stroke", (n: GNode) => (n.avatar ? color(n) : "#0c0b0a"))
+      .attr("stroke-width", (n: GNode) => (n.avatar ? Math.max(1.6, n.r! * 0.2) : 1.2));
+
+    refs.current.svg.on("click", () => useViz.getState().set("selected", null));
+
+    sim.current!.nodes(nodes);
+    (sim.current!.force("link") as d3.ForceLink<GNode, GLink>).links(links);
+    sim.current!.alpha(Math.min(0.6, 0.1 + added / 35)).restart();
+
+    if (st.selected) applyHighlight(st.selected);
+  }
+
+  function neighborWeights(id: string) {
+    const w = new Map<string, number>();
+    for (const l of (sim.current!.force("link") as d3.ForceLink<GNode, GLink>).links() as GLink[]) {
+      if (l.s === id) w.set(l.t!, l.w!);
+      else if (l.t === id) w.set(l.s!, l.w!);
+    }
+    return w;
+  }
+
+  function applyHighlight(id: string | null) {
+    const { gNode, gLink } = refs.current;
+    gNode.selectAll<SVGGElement, GNode>("g.node").selectAll("text.lbl").remove();
+    if (!id) {
+      gNode.selectAll<SVGGElement, GNode>("g.node").style("opacity", 1);
+      gNode.selectAll("circle").attr("stroke-width", (n: any) => (n.avatar ? Math.max(1.6, n.r * 0.2) : 1.2)).attr("stroke", (n: any) => (n.avatar ? buildColorModel(data!.nodes, useViz.getState().colorBy).color(n) : "#0c0b0a"));
+      gLink.selectAll("line").attr("stroke-opacity", 0.5);
+      return;
+    }
+    const w = neighborWeights(id);
+    const keep = new Set(w.keys()); keep.add(id);
+    gNode.selectAll<SVGGElement, GNode>("g.node").style("opacity", (n) => (keep.has(n.id) ? 1 : 0.12));
+    gNode.selectAll<SVGGElement, GNode>("g.node").filter((n) => n.id === id)
+      .select("circle").attr("stroke", "#ede7dc").attr("stroke-width", 2);
+    gLink.selectAll<SVGLineElement, GLink>("line").attr("stroke-opacity", (l) => (l.s === id || l.t === id ? 0.55 : 0.04));
+    const top = [...w.entries()].sort((a, b) => b[1] - a[1]).slice(0, 12).map((d) => d[0]);
+    const labels = new Set(top); labels.add(id);
+    gNode.selectAll<SVGGElement, GNode>("g.node").filter((n) => labels.has(n.id))
+      .append("text").attr("class", "lbl")
+      .attr("x", (n) => n.r! + 4).attr("y", 3)
+      .attr("font-family", "var(--font-mono), monospace").attr("font-size", 10).attr("fill", "#ede7dc")
+      .attr("paint-order", "stroke").attr("stroke", "#0c0b0a").attr("stroke-width", 3.5).attr("stroke-linejoin", "round")
+      .text((n) => n.name);
+  }
+
+  function drag() {
+    return d3.drag<SVGGElement, GNode>()
+      .on("start", (e, d) => { if (!e.active) sim.current!.alphaTarget(0.2).restart(); d.fx = d.x; d.fy = d.y; })
+      .on("drag", (e, d) => { d.fx = e.x; d.fy = e.y; })
+      .on("end", (e, d) => { if (!e.active) sim.current!.alphaTarget(0); d.fx = null; d.fy = null; });
+  }
+
+  function fitView(dur = 600) {
+    const nodes = sim.current!.nodes().filter((n) => n.x != null);
+    if (!nodes.length) return;
+    const xs = nodes.map((n) => n.x!).sort(d3.ascending);
+    const ys = nodes.map((n) => n.y!).sort(d3.ascending);
+    const pad = 40;
+    // frame the dense core (5th–95th pct) so a few antenna nodes don't shrink it
+    const x0 = d3.quantileSorted(xs, 0.05)! - pad, x1 = d3.quantileSorted(xs, 0.95)! + pad;
+    const y0 = d3.quantileSorted(ys, 0.05)! - pad, y1 = d3.quantileSorted(ys, 0.95)! + pad;
+    const rect = svgRef.current!.getBoundingClientRect();
+    const k = Math.max(0.3, Math.min(3, 0.82 * Math.min(rect.width / (x1 - x0), rect.height / (y1 - y0))));
+    const tx = (rect.width - k * (x0 + x1)) / 2;
+    const ty = (rect.height - k * (y0 + y1)) / 2;
+    refs.current.svg.transition().duration(dur).call(
+      refs.current.zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(k)
+    );
+  }
+
+  // expose fit for the store-driven "reset" (used after play ends)
+  useEffect(() => { refs.current.fitView = fitView; });
+
+  return <svg ref={svgRef} className="h-full w-full block" style={{ cursor: "grab" }} />;
+}

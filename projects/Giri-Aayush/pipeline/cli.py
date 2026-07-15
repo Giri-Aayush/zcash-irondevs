@@ -32,6 +32,8 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--no-incremental", action="store_true", help="ignore mining cache")
     ap.add_argument("--avatars", action="store_true",
                     help="fetch GitHub avatars via gh (downloaded locally, cached)")
+    ap.add_argument("--max-nodes", type=int, default=500,
+                    help="cap rendered network to the top-N contributors (0 = no cap)")
     args = ap.parse_args(argv)
 
     data_root = (args.data or _default_data()).resolve()
@@ -57,15 +59,17 @@ def main(argv: list[str] | None = None) -> None:
         manifest = avatars_mod.load_manifest(web_dir)
 
     print(f"▸ building network from {len(records)} commits …")
-    doc = build(records, avatars=manifest)
+    doc = build(records, avatars=manifest, max_nodes=args.max_nodes)
     doc["meta"]["generated_utc"] = datetime.now(timezone.utc).isoformat()
     doc["meta"]["avatars"] = len(manifest)
     out.write_text(json.dumps(doc, separators=(",", ":")))
     dt = time.perf_counter() - t0
 
     m = doc["meta"]
+    shown = (f"{m['n_contributors']} of {m['n_contributors_total']}"
+             if m["n_contributors"] < m["n_contributors_total"] else str(m["n_contributors"]))
     print(
-        f"✓ {m['n_commits']} commits · {m['n_contributors']} contributors · "
+        f"✓ {m['n_commits']} commits · {m['n_repos']} repos · {shown} contributors shown · "
         f"{m['n_edges']} co-authorship edges · {m['n_months']} months "
         f"({m['months'][0]} → {m['months'][-1]})"
     )

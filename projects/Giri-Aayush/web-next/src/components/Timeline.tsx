@@ -1,0 +1,132 @@
+"use client";
+
+import { useEffect, useRef } from "react";
+import { useViz } from "@/lib/store";
+import { MILESTONES, prettyMonth } from "@/lib/graph";
+import { Segmented } from "./Segmented";
+
+export default function Timeline() {
+  const { data, month, mode, windowSize, playing, set, setMonth, togglePlay } = useViz();
+  const trackRef = useRef<HTMLDivElement>(null);
+
+  // playback
+  useEffect(() => {
+    if (!playing || !data) return;
+    const n = data.meta.n_months;
+    if (month >= n - 1) setMonth(0);
+    const id = setInterval(() => {
+      const cur = useViz.getState().month;
+      if (cur >= n - 1) { set("playing", false); return; }
+      setMonth(cur + 1);
+    }, 360);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playing, data]);
+
+  if (!data) return null;
+  const months = data.meta.months;
+  const n = months.length;
+  const cm = data.meta.commits_monthly;
+  const max = Math.max(...cm, 1);
+  const pm = prettyMonth(months, month);
+
+  const scrub = (clientX: number) => {
+    const el = trackRef.current!;
+    const r = el.getBoundingClientRect();
+    const frac = Math.max(0, Math.min(1, (clientX - r.left) / r.width));
+    setMonth(Math.round(frac * (n - 1)));
+  };
+
+  return (
+    <div className="glass pointer-events-auto flex items-center gap-5 px-5 py-3">
+      {/* play */}
+      <button
+        onClick={togglePlay}
+        aria-label={playing ? "Pause" : "Play"}
+        className="grid size-11 flex-none place-items-center rounded-full text-[13px] transition-transform hover:scale-105 active:scale-95"
+        style={{
+          background: playing ? "rgba(255,255,255,0.06)" : "radial-gradient(circle at 36% 30%, #ffd469, var(--gold))",
+          color: playing ? "#ede7dc" : "#241a00",
+          boxShadow: playing ? "none" : "0 4px 16px -4px rgba(244,183,40,0.5)",
+        }}
+      >
+        {playing ? "❚❚" : "▶"}
+      </button>
+
+      {/* month + milestone pill */}
+      <div className="flex w-[190px] flex-none items-center gap-3">
+        <div className="font-display tnum text-[15px] leading-none">
+          <span className="text-foreground/55">{pm.year}</span> <span className="font-semibold text-gold">{pm.month}</span>
+        </div>
+      </div>
+
+      {/* track */}
+      <div className="relative flex-1">
+        {/* milestone labels — alternate rows so close ones (Heartwood/Canopy) don't collide */}
+        <div className="pointer-events-none absolute -top-2 left-0 h-6 w-full">
+          {MILESTONES.map(([ym, name], i) => {
+            const idx = months.indexOf(ym);
+            if (idx < 0) return null;
+            return (
+              <span
+                key={ym}
+                className="label absolute -translate-x-1/2 whitespace-nowrap"
+                style={{ left: `${(idx / (n - 1)) * 100}%`, top: i % 2 ? 11 : 0, fontSize: "8px", color: "rgba(237,231,220,0.42)" }}
+              >
+                {name}
+              </span>
+            );
+          })}
+        </div>
+
+        {/* histogram + scrub */}
+        <div
+          ref={trackRef}
+          onPointerDown={(e) => { (e.target as HTMLElement).setPointerCapture(e.pointerId); scrub(e.clientX); }}
+          onPointerMove={(e) => { if (e.buttons === 1) scrub(e.clientX); }}
+          className="relative mt-5 flex h-8 cursor-pointer items-end gap-px"
+        >
+          {cm.map((v, i) => (
+            <div
+              key={i}
+              className="flex-1 rounded-[1px]"
+              style={{
+                height: `${Math.max(4, Math.sqrt(v / max) * 100)}%`,
+                background: i <= month ? "var(--gold)" : "rgba(244,183,40,0.18)",
+              }}
+            />
+          ))}
+          {/* milestone ticks */}
+          {MILESTONES.map(([ym]) => {
+            const idx = months.indexOf(ym);
+            if (idx < 0) return null;
+            return <div key={ym} className="absolute bottom-0 h-full w-px bg-white/15" style={{ left: `${(idx / (n - 1)) * 100}%` }} />;
+          })}
+          {/* playhead */}
+          <div className="pointer-events-none absolute bottom-0 top-0 w-px bg-gold" style={{ left: `${(month / (n - 1)) * 100}%` }}>
+            <div className="absolute -top-1 -left-[3px] size-[7px] rounded-full bg-gold" />
+          </div>
+        </div>
+      </div>
+
+      {/* mode */}
+      <div className="flex flex-none items-center gap-3">
+        {mode === "window" && (
+          <div className="flex items-center gap-1.5">
+            <input
+              type="range" min={3} max={36} step={1} value={windowSize}
+              onChange={(e) => set("windowSize", +e.target.value)}
+              className="w-16 accent-[var(--gold)]"
+            />
+            <span className="mono tnum text-[10px] text-gold">{windowSize}mo</span>
+          </div>
+        )}
+        <Segmented
+          value={mode}
+          onChange={(v) => set("mode", v)}
+          options={[{ value: "cumulative", label: "Cumulative" }, { value: "window", label: "Window" }]}
+        />
+      </div>
+    </div>
+  );
+}

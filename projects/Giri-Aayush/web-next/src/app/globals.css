@@ -1,0 +1,107 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-display);
+  --font-display: var(--font-display);
+  --font-mono: var(--font-mono);
+  --color-gold: var(--gold);
+  --color-canvas: var(--canvas);
+  --color-hairline: var(--hairline);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+}
+
+/* ── Ten Years of Zcash — instrument design system ── */
+:root {
+  --canvas: #0c0b0a;
+  --gold: #f4b728;
+  --hairline: rgba(255, 255, 255, 0.07);
+
+  --background: #0c0b0a;
+  --foreground: #ede7dc;
+  --card: rgba(20, 19, 18, 0.8);
+  --card-foreground: #ede7dc;
+  --popover: #161514;
+  --popover-foreground: #ede7dc;
+  --primary: #f4b728;
+  --primary-foreground: #0c0b0a;
+  --secondary: rgba(255, 255, 255, 0.05);
+  --secondary-foreground: #ede7dc;
+  --muted: rgba(255, 255, 255, 0.05);
+  --muted-foreground: rgba(237, 231, 220, 0.5);
+  --accent: rgba(244, 183, 40, 0.13);
+  --accent-foreground: #f4b728;
+  --destructive: oklch(0.7 0.19 22);
+  --border: rgba(255, 255, 255, 0.08);
+  --input: rgba(255, 255, 255, 0.09);
+  --ring: rgba(244, 183, 40, 0.5);
+  --radius: 0.6rem;
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  body {
+    background: var(--canvas);
+    color: var(--foreground);
+    font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+@layer utilities {
+  /* floating glass panel — the signature surface */
+  .glass {
+    background: rgba(20, 19, 18, 0.8);
+    border: 1px solid var(--hairline);
+    border-radius: 12px;
+    backdrop-filter: blur(18px) saturate(1.25);
+    -webkit-backdrop-filter: blur(18px) saturate(1.25);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.05),
+      0 18px 50px -20px rgba(0, 0, 0, 0.8);
+  }
+  /* tiny tracked mono label — IBM Plex Mono, uppercase */
+  .label {
+    font-family: var(--font-mono), monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    font-size: 9px;
+    color: var(--muted-foreground);
+    font-weight: 500;
+  }
+  .mono {
+    font-family: var(--font-mono), monospace;
+  }
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+  .text-gold {
+    color: var(--gold);
+  }
+}
