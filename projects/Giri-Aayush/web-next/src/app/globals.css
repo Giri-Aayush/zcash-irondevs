@@ -212,6 +212,13 @@ button:not(:disabled) {
 text.whale { fill: var(--graph-ink); stroke: var(--graph-ink-halo); }
 text.lbl { fill: var(--graph-ink-strong); stroke: var(--graph-ink-halo); }
 
+/* the background sea: hollow theme-tinted rings (transparent fill keeps hover hit area) */
+circle.body.ring {
+  fill: transparent;
+  stroke: var(--graph-link);
+  stroke-opacity: 0.5;
+}
+
 /* re-theme the surfaces and canvas smoothly, not instantly */
 body, .glass, .link, text.whale, text.lbl {
   transition: background-color 0.45s ease, color 0.45s ease, fill 0.45s ease,

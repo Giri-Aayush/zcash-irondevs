@@ -312,17 +312,20 @@ export default function GraphCanvas() {
       .attr("opacity", (n: GNode) => (conn(n) ? (n.is_bot ? 0.2 : 0.48) : 0)) // softer glow
       .transition(T()).attr("r", (n: GNode) => n.r! * 1.85);
     nodeSel.select("circle.body")
-      .attr("fill", (n: GNode) => (!conn(n) ? "url(#muted)" : n.avatar ? avatarFill(n) : grads(color(n)).sphere))
-      .attr("fill-opacity", (n: GNode) => (!conn(n) ? 0.5 : n.is_bot ? 0.5 : 1))
-      .attr("stroke", (n: GNode) => (conn(n) ? color(n) : "#2b3450"))
-      .attr("stroke-opacity", (n: GNode) => (conn(n) ? 0.95 : 0.5))
+      // Bubblemaps-V2 grammar: the background sea is hollow rings, only people
+      // who matter get filled color (the .ring class is theme-driven CSS)
+      .classed("ring", (n: GNode) => !conn(n))
+      .attr("fill", (n: GNode) => (!conn(n) ? "none" : n.avatar ? avatarFill(n) : grads(color(n)).sphere))
+      .attr("fill-opacity", (n: GNode) => (n.is_bot && conn(n) ? 0.5 : 1))
+      .attr("stroke", (n: GNode) => (conn(n) ? color(n) : null))
+      .attr("stroke-opacity", (n: GNode) => (conn(n) ? 0.95 : null))
       .attr("stroke-width", (n: GNode) => (conn(n) ? Math.max(1.6, n.r! * 0.13) : 1))
       .transition(T()).attr("r", (n: GNode) => n.r!);
     nodeSel.select("circle.sheen")
       .attr("cx", (n: GNode) => -n.r! * 0.12)
       .attr("cy", (n: GNode) => -n.r! * 0.14)
       .attr("fill", "url(#sheen)")
-      .attr("opacity", (n: GNode) => (!conn(n) ? 0.35 : n.avatar ? 0.16 : 0.5))
+      .attr("opacity", (n: GNode) => (!conn(n) ? 0 : n.avatar ? 0.16 : 0.5))
       .transition(T()).attr("r", (n: GNode) => n.r! * 0.86);
 
     // ambient radar pulse on connected "stations" (staggered, capped for perf)
@@ -381,9 +384,11 @@ export default function GraphCanvas() {
       gNode.selectAll<SVGGElement, GNode>("g.node").style("opacity", 1);
       gNode.selectAll("text.whale").style("display", null);
       gNode.selectAll<SVGCircleElement, GNode>("circle.body")
+        .filter((n) => (n.deg || 0) > 0)
         .attr("stroke", (n) => cm.color(n)).attr("stroke-opacity", 0.95)
         .attr("stroke-width", (n) => Math.max(1.4, n.r! * 0.14));
-      gLink.selectAll("line").attr("stroke-opacity", 0.7);
+      gLink.selectAll<SVGLineElement, GLink>("line")
+        .attr("stroke-opacity", 0.7).style("stroke", null).style("stroke-width", null);
       return;
     }
     const w = neighborWeights(id);
@@ -397,7 +402,11 @@ export default function GraphCanvas() {
     focus.insert("circle", ":first-child").attr("class", "ping")
       .attr("r", (n) => n.r!).attr("fill", "none")
       .attr("stroke", (n) => cm.color(n)).attr("stroke-width", 2);
-    gLink.selectAll<SVGLineElement, GLink>("line").attr("stroke-opacity", (l) => (l.s === id || l.t === id ? 0.6 : 0.03));
+    // the focused person's ties flip white-hot; everything else fades to ghost
+    gLink.selectAll<SVGLineElement, GLink>("line")
+      .attr("stroke-opacity", (l) => (l.s === id || l.t === id ? 0.9 : 0.03))
+      .style("stroke", (l) => (l.s === id || l.t === id ? "var(--graph-ink-strong)" : null))
+      .style("stroke-width", (l) => (l.s === id || l.t === id ? "2.2px" : null));
     const top = [...w.entries()].sort((a, b) => b[1] - a[1]).slice(0, 12).map((d) => d[0]);
     const labels = new Set(top); labels.add(id);
     // hide the resting whale labels for anyone getting a focus label, no doubles

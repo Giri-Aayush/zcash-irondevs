@@ -26,7 +26,12 @@ export default function SelectionCard() {
       .map((x) => ({ node: data.nodes.find((m) => m.id === x.id)!, w: x.w }))
       .filter((x) => x.node);
     const firstYear = data.meta.months[n.first]?.split("-")[0];
-    return { n, color, cluster, ties: nb.length, collabs, firstYear };
+    // cluster aggregate, Bubblemaps-style: how much of the codebase this group carries
+    const key = String(colorBy === "community" ? n.community : n.org);
+    const members = data.nodes.filter((m) => String(colorBy === "community" ? m.community : m.org) === key);
+    const totalCommits = data.nodes.reduce((s, m) => s + m.commits, 0) || 1;
+    const clusterPct = (100 * members.reduce((s, m) => s + m.commits, 0)) / totalCommits;
+    return { n, color, cluster, ties: nb.length, collabs, firstYear, clusterSize: members.length, clusterPct };
   }, [data, selected, colorBy]);
 
   return (
@@ -62,11 +67,16 @@ export default function SelectionCard() {
             </div>
           </div>
 
-          {/* cluster */}
+          {/* cluster + its weight in the codebase */}
           {info.cluster && (
-            <div className="mt-3 flex items-center gap-2 text-[12px] text-foreground/70">
-              <span className="size-2.5 rounded-[3px]" style={{ background: info.color, boxShadow: `0 0 8px -2px ${info.color}` }} />
-              <span className="truncate">{info.cluster.label}</span>
+            <div className="mt-3">
+              <div className="flex items-center gap-2 text-[12px] text-foreground/70">
+                <span className="size-2.5 rounded-[3px]" style={{ background: info.color, boxShadow: `0 0 8px -2px ${info.color}` }} />
+                <span className="truncate">{info.cluster.label}</span>
+              </div>
+              <div className="label mt-1 pl-[18px]" style={{ letterSpacing: "0.08em" }}>
+                {info.clusterSize} people · {info.clusterPct.toFixed(1)}% of commits
+              </div>
             </div>
           )}
 

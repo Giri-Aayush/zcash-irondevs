@@ -10,6 +10,7 @@ import Timeline from "@/components/Timeline";
 import Tooltip from "@/components/Tooltip";
 import StoryCaption from "@/components/StoryCaption";
 import SelectionCard from "@/components/SelectionCard";
+import Leaderboard from "@/components/Leaderboard";
 import ThemeToggle from "@/components/ThemeToggle";
 
 // cinematic rise-and-unblur, spring-settled
@@ -103,6 +104,7 @@ export default function Home() {
         )}
       </AnimatePresence>
 
+      <Leaderboard />
       <SelectionCard />
       <StoryCaption />
       <Tooltip />

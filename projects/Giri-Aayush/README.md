@@ -119,7 +119,8 @@ without losing the data.
 | **Size by** | commits, collaborators (degree), or **bridging** (betweenness) |
 | **Declutter** | raise the *minimum tie strength* to isolate the tightest collaborations |
 | **Find anyone** | search, and the camera flies to them and lights up their ties |
-| **Open a profile** | click a node for a card with their repos, closest collaborators, and stats |
+| **Scan the leaderboard** | a ranked top-contributors rail with commit share; click a row to fly to them |
+| **Open a profile** | click a node for a card with their repos, closest collaborators, cluster weight, and stats |
 | **Light or dark** | a control-room dark theme and a clean daylight theme, remembered per browser |
 
 The interface rests quiet by default (masthead, search, timeline), with the
