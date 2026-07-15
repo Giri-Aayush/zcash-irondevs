@@ -87,6 +87,8 @@ def build(records: list[dict], *, window_years: float = 0.0, avatars: dict | Non
     first_touch: dict[tuple[str, str], int] = {}
     # direct co-authored-by pair weights, bucketed by month
     coauthor_monthly: dict[tuple[str, str], dict[int, int]] = defaultdict(lambda: defaultdict(int))
+    # months each author was active in each repo — powers a meaningful tie weight
+    repo_month: dict[tuple[str, str], set[int]] = defaultdict(set)
 
     for r in records:
         mi = index[_month_key(r["date"])]
@@ -105,6 +107,7 @@ def build(records: list[dict], *, window_years: float = 0.0, avatars: dict | Non
             key = (a, repo)
             if key not in first_touch or mi < first_touch[key]:
                 first_touch[key] = mi
+            repo_month[key].add(mi)
 
         # direct co-authorship (same commit, >1 person) — strongest tie signal
         for a, b in itertools.combinations(sorted(authorship), 2):
@@ -130,7 +133,10 @@ def build(records: list[dict], *, window_years: float = 0.0, avatars: dict | Non
     edges: dict[tuple[str, str], dict] = {}
     for repo, authors in repo_authors.items():
         for a, b in itertools.combinations(sorted(authors), 2):
-            born = max(first_touch[(a, repo)], first_touch[(b, repo)])
+            # tie strength = months BOTH were active in this repo (real co-activity),
+            # not a flat +1 — so long-running collaborators outweigh one-off overlaps.
+            co_months = repo_month[(a, repo)] & repo_month[(b, repo)]
+            born = min(co_months) if co_months else max(first_touch[(a, repo)], first_touch[(b, repo)])
             e = edges.get((a, b))
             if e is None:
                 e = edges[(a, b)] = {
@@ -141,7 +147,11 @@ def build(records: list[dict], *, window_years: float = 0.0, avatars: dict | Non
                 }
             e["shared_repos"].append(repo)
             e["birth"] = min(e["birth"], born)
-            e["monthly"][born] += 1  # +1 weight when this shared repo is established
+            if co_months:
+                for m in co_months:
+                    e["monthly"][m] += 1  # +1 for each month they overlapped here
+            else:
+                e["monthly"][born] += 1  # shared repo but never the same month → minimal tie
 
     # fold in direct co-authored-by ties, month by month, so the temporal weight
     # (sum of monthly increments) equals the total edge weight and the tie-strength
@@ -168,7 +178,7 @@ def build(records: list[dict], *, window_years: float = 0.0, avatars: dict | Non
     G = nx.Graph()
     G.add_nodes_from(kept)
     for (a, b), e in edges.items():
-        w = len(e["shared_repos"]) + e["coauthored"]
+        w = sum(e["monthly"].values())  # weight == Σ monthly increments (co-activity + co-authored)
         if w > 0:
             G.add_edge(a, b, weight=w)
 
@@ -215,7 +225,7 @@ def build(records: list[dict], *, window_years: float = 0.0, avatars: dict | Non
     for (a, b), e in edges.items():
         if a not in kept or b not in kept:
             continue
-        w = len(e["shared_repos"]) + e["coauthored"]
+        w = sum(e["monthly"].values())  # weight == Σ monthly increments (co-activity + co-authored)
         if w <= 0:
             continue
         links_out.append(

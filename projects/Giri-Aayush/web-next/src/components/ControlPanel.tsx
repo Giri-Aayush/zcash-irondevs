@@ -9,7 +9,7 @@ import { Segmented } from "./Segmented";
 const num = (v: number | readonly number[]) => (Array.isArray(v) ? v[0] : (v as number));
 
 export default function ControlPanel({ onClose, className }: { onClose?: () => void; className?: string }) {
-  const { data, colorBy, sizeScale, minWeight, set } = useViz();
+  const { data, colorBy, sizeBy, sizeScale, minWeight, showBots, set } = useViz();
   const [q, setQ] = useState("");
 
   const clusters = useMemo(
@@ -102,6 +102,16 @@ export default function ControlPanel({ onClose, className }: { onClose?: () => v
         <Slider min={0.5} max={2} step={0.25} value={[sizeScale]} onValueChange={(v) => set("sizeScale", num(v))} />
       </div>
 
+      {/* size by which metric */}
+      <div className="flex flex-col gap-2">
+        <span className="label">Size by</span>
+        <Segmented
+          value={sizeBy}
+          onChange={(v) => set("sizeBy", v)}
+          options={[{ value: "commits", label: "Commits" }, { value: "degree", label: "Ties" }, { value: "betweenness", label: "Bridging" }]}
+        />
+      </div>
+
       {/* min tie strength */}
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
@@ -110,6 +120,16 @@ export default function ControlPanel({ onClose, className }: { onClose?: () => v
         </div>
         <Slider min={1} max={maxWeight} step={1} value={[minWeight]} onValueChange={(v) => set("minWeight", num(v))} />
       </div>
+
+      {/* show bots */}
+      <label className="flex cursor-pointer items-center gap-2.5">
+        <input
+          type="checkbox" checked={showBots}
+          onChange={(e) => set("showBots", e.target.checked)}
+          className="size-3.5 accent-[var(--gold)]"
+        />
+        <span className="label">Show bots &amp; automation</span>
+      </label>
 
       {/* clusters */}
       <div className="flex flex-col gap-2">

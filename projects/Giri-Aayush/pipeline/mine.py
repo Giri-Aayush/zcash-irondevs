@@ -58,30 +58,41 @@ def _pick_date(commit) -> str:
     return dt.astimezone(tz=dt.tzinfo).isoformat()
 
 
+def _clean(s: str | None) -> str:
+    """Strip lone surrogates / undecodable bytes from git metadata so neither the
+    JSON cache write nor the downstream graph export can crash on one weird name."""
+    return (s or "").encode("utf-8", "replace").decode("utf-8").strip()
+
+
 def mine_repo(repo_path: str, slug: str, seen_hashes: set[str] | None = None) -> list[dict]:
-    """Mine one repo. Returns new commit records not in ``seen_hashes``."""
+    """Mine one repo. Returns new commit records not in ``seen_hashes``.
+
+    Fault-isolated: a repo that fails mid-traversal (empty/unborn HEAD, corrupt
+    ref, unreadable object) returns whatever it collected instead of raising —
+    so a single bad repo among hundreds can't abort the whole archive run.
+    """
     seen = seen_hashes or set()
     records: list[dict] = []
-    for c in Repository(repo_path).traverse_commits():
-        if c.hash in seen:
-            continue
-        records.append(
-            asdict(
-                CommitRecord(
-                    repo=slug,
-                    hash=c.hash,
-                    author_name=(c.author.name or "").strip(),
-                    author_email=(c.author.email or "").strip(),
-                    committer_name=(c.committer.name or "").strip(),
-                    committer_email=(c.committer.email or "").strip(),
-                    date=_pick_date(c),
-                    co_authors=[
-                        ((d.name or "").strip(), (d.email or "").strip())
-                        for d in c.co_authors
-                    ],
+    try:
+        for c in Repository(repo_path).traverse_commits():
+            if c.hash in seen:
+                continue
+            records.append(
+                asdict(
+                    CommitRecord(
+                        repo=slug,
+                        hash=c.hash,
+                        author_name=_clean(c.author.name),
+                        author_email=_clean(c.author.email),
+                        committer_name=_clean(c.committer.name),
+                        committer_email=_clean(c.committer.email),
+                        date=_pick_date(c),
+                        co_authors=[(_clean(d.name), _clean(d.email)) for d in c.co_authors],
+                    )
                 )
             )
-        )
+    except Exception as e:  # noqa: BLE001 — resilience beats correctness-of-one-repo here
+        print(f"  ! {slug}: mining stopped early ({type(e).__name__}); kept {len(records)}")
     return records
 
 
@@ -121,7 +132,11 @@ def mine_all(
             }
             for fut in as_completed(futs):
                 slug, cache_file, head, seen = futs[fut]
-                new_records = fut.result()
+                try:
+                    new_records = fut.result()
+                except Exception as e:  # noqa: BLE001 — one worker dying must not abort the run
+                    print(f"  ! {slug}: skipped ({type(e).__name__})")
+                    continue
                 prior = _load_cache(cache_file)
                 all_records = (prior["records"] if prior else []) + new_records
                 _save_cache(cache_file, head, all_records)

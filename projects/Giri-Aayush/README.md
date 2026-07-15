@@ -4,118 +4,121 @@
 
 ![The Zcash co-authorship network](docs/hero.png)
 
-Every dot is a **person**. Every line joins two people who committed inside the
-same repository. Press **play** and a decade of collaboration assembles itself
-month by month — from the six-person founding team in 2016 to the ~180-strong
-ecosystem that ships Ironwood. Contributor nodes carry their real GitHub avatars,
+*The decade replaying — from the founding team to the Ironwood-era ecosystem:*
+
+![Playing the decade](docs/demo.gif)
+
+Every dot is a **person**. Every line joins two people who worked in the same
+repository, weighted by how many months they were actually active there together.
+On load the piece **plays the decade back** — from the founding handful in 2016 to
+the ~190-strong ecosystem that ships Ironwood — narrated at each Zcash network
+upgrade; then you can *explore*. Contributor nodes carry their real GitHub avatars,
 ringed in their detected community color.
 
 This is the [Irondevs contest](https://github.com/jenkin/zcash-irondevs)
-deliverable: the *dynamic co-authorship network* (the projection of the
-bipartite author↔repository graph), with animated, interactive visualization.
+deliverable: the *dynamic co-authorship network* (the projection of the bipartite
+author↔repository graph), with animated, interactive visualization.
 
 ---
-
-## Architecture
-
-Two decoupled halves, exactly as the contest describes ("decouple raw data
-access from computation"):
-
-```
-pipeline/     Python · reads bare repos → emits web-next/public/graph.json
-  mine.py       PyDriller metadata mining · multiprocessing · incremental cache
-  identity.py   author deduplication (union-find) + bot detection
-  avatars.py    GitHub avatar resolution via `gh` (downloaded locally, cached)
-  graph.py      bipartite→author projection · temporal weights · communities · metrics
-  cli.py        mine → build → graph.json  (top-N cap keeps it bounded on the full archive)
-
-web-next/     Next.js 16 + Tailwind v4 + shadcn · reads graph.json, renders the viz
-  src/components/GraphCanvas.tsx   D3 force graph (play, zoom, filter, search, hover)
-  src/components/{StatsBar,ControlPanel,Timeline,Tooltip}.tsx
-  src/lib/{graph,store}.ts         data model + zustand state
-```
-
-The front-end is a **static export** — `next build` emits plain files in `out/`,
-so the judge serves it with any static server; no Node runtime needed to view.
 
 ## Run it in 5 seconds (no build)
 
-The visualization is **pre-built and committed** to `web-next/out/`. Just serve
-those static files — no Node, no npm, no build:
+The visualization is **pre-built and committed** to `web-next/out/` — serve those
+static files, no Node/npm/build required:
 
 ```bash
-npx serve projects/Giri-Aayush/web-next/out      # or:
 python3 -m http.server 8080 -d projects/Giri-Aayush/web-next/out
-# open the printed URL
+# open http://localhost:8080   (or: npx serve projects/Giri-Aayush/web-next/out)
 ```
 
-## Regenerate against the full archive
+## Regenerate against your archive
 
-To render *your* mirror instead of the committed seed data, run the Python
-pipeline (it reads the bare repos and writes `graph.json` the front-end loads):
+To render your own mirror instead of the committed seed data, run the Python
+pipeline, then rebuild the static site:
 
 ```bash
-./init.sh                                          # from the contest repo root
+./init.sh                                   # from the contest root — clone the repos
 cd projects/Giri-Aayush
 uv sync
-uv run ironwood --avatars --out web-next/public/graph.json   # mine → build
-cd web-next && npm ci && npm run build             # rebuild the static site → out/
+uv run ironwood                             # mine → dedup → project → web-next/public/graph.json
+cd web-next && npm ci && npm run build      # → out/
 ```
 
-The pipeline caps the rendered network to the top-N contributors and strongest
-ties (`--max-nodes`, plus an internal edge cap), so `graph.json` and the browser
-stay fast even on the 500-repo / millions-of-commits archive. Verified: a
-400k-commit / 2,500-contributor synthetic builds in ~25 s at ~0.5 GB RAM into a
-2.4 MB `graph.json`.
-
-> **Reviewing the code?** The front-end source is in `web-next/src/`; the Python
-> pipeline is in `pipeline/`. `web-next/out/` is only the compiled static output
-> for zero-build running.
-
-### Docker
-
-```bash
-docker build -t zcash-irondevs .          # builds the static site
-docker run --rm -p 3000:3000 zcash-irondevs
-```
+**Reviewing the code?** Everything worth reading is `pipeline/*.py` (≈140 lines
+each) and `web-next/src/` (`lib/graph.ts`, `lib/store.ts`, `components/*`).
+`web-next/out/` is only the compiled static output for zero-build running.
 
 ---
 
+## The data on load
+
+The committed seed archive is the five repos in `repositories.dat`
+(`ZcashFoundation/zebra` · `frost`, `zcash/zips`, `zingolabs/zaino`,
+`Kenbak/cipherscan`): **16,196 commits · 192 deduplicated contributors ·
+Dec 2015 → Jul 2026**. The pipeline discovers whatever bare repos exist under the
+data root, so it scales unchanged to the full CodeZ mirror.
+
+## Built to survive the full archive
+
+The judge runs this on 500+ repos / millions of commits. The pipeline is built for
+that, not just the sample:
+
+- **Fault-isolated mining** — a repo that fails mid-traversal (empty/unborn HEAD,
+  corrupt ref, non-UTF-8 metadata) is skipped, never aborting the run
+  (`mine.py`); author strings are unicode-sanitized so no single name can crash
+  the cache write or the JSON export.
+- **Bounded output** — the rendered network is capped to the top-N contributors
+  by commits and the strongest ties (`--max-nodes`, internal `max_edges`), applied
+  *before* projection, so `graph.json` and the browser stay fast no matter how
+  dense the core is.
+- **Validated at scale** — a synthetic 400k-commit / 2,500-contributor archive
+  builds in ~25 s at ~0.5 GB RAM into a ~2.4 MB `graph.json`. (Cold mining of the
+  real multi-GB archive is I/O-bound in PyDriller; the incremental `HEAD`-keyed
+  cache makes every subsequent run near-instant.)
+
+---
+
+## What you can do
+
+| | |
+|---|---|
+| ▶ **Watch the decade** | auto-plays 2015→2026 with a narrated caption at each upgrade; "skip → explore" any time |
+| 🕑 **Slice time** | scrub to any month; **Cumulative** or a sliding **Window** of who was active together |
+| 🎨 **Recolor** | by detected **community** (Louvain) or **organization** |
+| 📐 **Size by** | commits, collaborators (degree), or **bridging** (betweenness) |
+| 🎚 **Declutter** | raise *minimum tie strength* to isolate the tightest collaborations |
+| 👤 **Find anyone** | search → the camera flies to them and lights up their ties |
+| 🏷 **Read the hierarchy** | the top contributors are always labelled; the long tail sits as a muted "sea" |
+
 ## Contest requirements → where they live
 
-| Required feature | How it's implemented |
+| Required feature | Where |
 |---|---|
-| **Bipartite → author projection** | `pipeline/graph.py` — authors↔repos projected to co-contribution edges; `Co-authored-by` trailers add weight |
-| **Incremental updates** | `pipeline/mine.py` — per-repo cache keyed by `HEAD`; unchanged repos skipped, changed repos append only unseen commits |
-| **Custom time slicing** | monthly-bucketed model; **Cumulative** and sliding **Window** modes, any month |
-| **Author deduplication** | `pipeline/identity.py` — union-find over name/email aliases, GitHub `noreply` normalization, bot tagging |
-| **Web-based interactive viz** | `web-next/` — D3 force graph, animation, search, filters, tooltips |
-| *Extra:* **multi-process** | `pipeline/mine.py` — one worker process per repository |
-| *Extra:* **network metrics** | degree, betweenness, Louvain communities + a per-month density/size timeline |
+| Bipartite → author projection | `pipeline/graph.py` |
+| Incremental updates | `pipeline/mine.py` (per-repo `HEAD` cache) |
+| Custom time slicing | `web-next/src/lib/graph.ts` + `Timeline.tsx` (cumulative / window) |
+| Author deduplication | `pipeline/identity.py` (union-find; conservative name-merge) |
+| Web interactive viz | `web-next/` |
+| *Extra:* multiprocessing | `pipeline/mine.py` (one worker per repo) |
+| *Extra:* network metrics | degree, betweenness, Louvain communities, per-month density timeline — surfaced via **Size by** + the stats bar |
 
-## Scaling to the full archive
+## How a tie is measured
 
-The judge runs this on 500+ repos / millions of commits / thousands of
-contributors. Mining is metadata-only + parallel; the network is then **capped to
-the top-N contributors by commits** (`--max-nodes`, default 500) *before*
-projecting, so the edge set and `graph.json` stay bounded and the force layout
-stays legible at any archive size. Headline metrics (commits, growth) are computed
-on the full data; the rendered network is the most prolific people.
-
-## How the network is built
-
-Two contributors are linked when they have both committed to a shared
-repository; the edge is born the month the later of the two first touches it, and
-gains weight per shared repo. Committing the **same commit** (a `Co-authored-by`
-trailer) is a stronger signal, so those ties add extra, month-stamped weight —
-making `weight == Σ monthly increments`, so the tie-strength filter is consistent
-through time. Identities are union-found over `(name, email)` so the graph
-reflects people, not addresses.
+Two contributors are linked when they were active in the same repository. The
+tie's weight is the number of **months they were both active there** (summed
+across shared repos), plus any `Co-authored-by` commits — so long-running
+collaborators clearly outweigh one-off overlaps, and `weight == Σ monthly
+increments` holds so the strength filter stays consistent through time. Identities
+are union-found over `(name, email)`, merging on shared email or a full "First
+Last" name (never a bare common first name), so the graph reflects people.
 
 ## Notes
 
-- Design language crafted in Claude Design, implemented here in Next.js + shadcn.
-- D3 is the only heavyweight runtime dep; the pipeline stays small and reviewable.
+- Front-end: Next.js + Tailwind + D3 + Framer Motion, **static-exported** (no
+  server). Network math uses `networkx` + `python-louvain` with an explicit,
+  reviewable temporal layer rather than `networkx-temporal`/`pathpyG`, to keep the
+  dependency surface small and the model easy to audit.
+- Design language crafted in Claude Design; implementation is original.
 
 ## License
 

@@ -27,7 +27,8 @@ def main(argv: list[str] | None = None) -> None:
         description="Build the Zcash dynamic co-authorship network.",
     )
     ap.add_argument("--data", type=Path, default=None, help="bare-repo root (default: autodetect)")
-    ap.add_argument("--out", type=Path, default=Path("web/graph.json"), help="output JSON")
+    ap.add_argument("--out", type=Path, default=Path("web-next/public/graph.json"),
+                    help="output JSON (default: the Next.js app's public/ dir)")
     ap.add_argument("--workers", type=int, default=None, help="mining worker processes")
     ap.add_argument("--no-incremental", action="store_true", help="ignore mining cache")
     ap.add_argument("--avatars", action="store_true",

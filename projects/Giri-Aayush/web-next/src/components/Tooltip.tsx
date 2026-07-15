@@ -20,7 +20,8 @@ export default function Tooltip() {
 
   let ties = 0;
   for (const l of data.links) {
-    if (l.source !== n.id && l.target !== n.id) continue;
+    // use the frozen id copies — d3-force mutates l.source/l.target into node objects
+    if ((l.s ?? l.source) !== n.id && (l.t ?? l.target) !== n.id) continue;
     if (linkWeight(l, month, mode, windowSize) >= minWeight) ties++;
   }
   const color = buildColorModel(data.nodes, colorBy).color(n);
@@ -36,6 +37,7 @@ export default function Tooltip() {
     <div className="glass pointer-events-none fixed z-50 w-[248px] p-3" style={style}>
       <div className="flex items-center gap-2.5">
         {n.avatar ? (
+          // eslint-disable-next-line @next/next/no-img-element -- static local avatar, next/image adds no value in static export
           <img src={n.avatar} alt="" className="size-9 flex-none rounded-full object-cover" style={{ border: `1.5px solid ${color}` }} />
         ) : (
           <span className="size-9 flex-none rounded-full" style={{ background: color }} />

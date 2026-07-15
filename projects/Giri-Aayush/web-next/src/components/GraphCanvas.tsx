@@ -12,13 +12,27 @@ import {
   type GNode,
 } from "@/lib/graph";
 
+type Sel<E extends d3.BaseType> = d3.Selection<E, unknown, null, undefined>;
+type Refs = {
+  svg: Sel<SVGSVGElement>;
+  defs: Sel<SVGDefsElement>;
+  zoomG: Sel<SVGGElement>;
+  gLink: Sel<SVGGElement>;
+  gNode: Sel<SVGGElement>;
+  zoom: d3.ZoomBehavior<SVGSVGElement, unknown>;
+  byId: Map<string, GNode>;
+  patterns: Set<string>;
+  didFit?: boolean;
+  fitView?: (d?: number) => void;
+};
+
 export default function GraphCanvas() {
   const svgRef = useRef<SVGSVGElement>(null);
   const sim = useRef<d3.Simulation<GNode, GLink> | null>(null);
-  const refs = useRef<any>({});
+  const refs = useRef<Refs>({} as Refs);
 
   const {
-    data, month, mode, windowSize, colorBy, sizeScale, minWeight, showBots, selected,
+    data, month, mode, windowSize, colorBy, sizeBy, sizeScale, minWeight, showBots, selected, story,
   } = useViz();
 
   // ── one-time setup ──
@@ -109,11 +123,33 @@ export default function GraphCanvas() {
   }, [data]);
 
   // ── react to control changes ──
-  useEffect(() => { if (sim.current) update(); // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [month, mode, windowSize, colorBy, sizeScale, minWeight, showBots]);
+  useEffect(() => {
+    if (!sim.current) return;
+    update();
+    // keep the growing network framed as the story auto-plays through the decade
+    const st = useViz.getState();
+    const last = (data?.meta.n_months ?? 1) - 1;
+    if (st.playing && (month % 12 === 0 || month === last)) {
+      const t = setTimeout(() => refs.current.fitView?.(750), 400);
+      return () => clearTimeout(t);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [month, mode, windowSize, colorBy, sizeBy, sizeScale, minWeight, showBots]);
 
-  useEffect(() => { if (sim.current) applyHighlight(selected); // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!sim.current) return;
+    applyHighlight(selected);
+    if (selected) recenter(selected);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected]);
+
+  // when the story ends and exploration begins, re-frame the (decluttered) network
+  useEffect(() => {
+    if (story || !sim.current) return;
+    const t = setTimeout(() => refs.current.fitView?.(750), 480);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [story]);
 
   function avatarFill(n: GNode) {
     const { defs, patterns } = refs.current;
@@ -181,7 +217,10 @@ export default function GraphCanvas() {
     const model = buildColorModel(data!.nodes, st.colorBy);
     const color = (n: GNode) => model.color(n);
 
-    const val = (n: GNode) => nodeC.get(n.id) || 0;
+    const val = (n: GNode) =>
+      st.sizeBy === "degree" ? (degree.get(n.id) || 0)
+      : st.sizeBy === "betweenness" ? n.betweenness
+      : (nodeC.get(n.id) || 0);
     const scale = st.sizeScale;
     // dramatic size for connected "whale" contributors; muted sea stays small
     const connMax = d3.max(nodes.filter((n) => (degree.get(n.id) || 0) > 0), val) || 1;
@@ -206,7 +245,7 @@ export default function GraphCanvas() {
     gLink.selectAll<SVGLineElement, GLink>("line")
       .data(links, (l: any) => l.s + "|" + l.t)
       .join(
-        (enter: any) => enter.append("line").attr("class", "link").attr("marker-end", "url(#arrow)"),
+        (enter: any) => enter.append("line").attr("class", "link"),
         (u: any) => u,
         (exit: any) => exit.remove()
       )
@@ -261,6 +300,22 @@ export default function GraphCanvas() {
       .attr("fill", "url(#sheen)")
       .attr("opacity", (n: GNode) => (!conn(n) ? 0.35 : n.avatar ? 0.16 : 0.5))
       .transition(T()).attr("r", (n: GNode) => n.r! * 0.86);
+
+    // always-on labels for the top few "whales" so the hierarchy reads instantly
+    gNode.selectAll("text.whale").remove();
+    const whales = new Set(
+      nodes.filter((n) => (n.deg || 0) > 0 && !n.is_bot)
+        .sort((a, b) => (nodeC.get(b.id) || 0) - (nodeC.get(a.id) || 0))
+        .slice(0, 5).map((n) => n.id)
+    );
+    gNode.selectAll<SVGGElement, GNode>("g.node").filter((n) => whales.has(n.id))
+      .append("text").attr("class", "whale")
+      .attr("text-anchor", "middle").attr("y", (n) => n.r! + 13)
+      .attr("font-family", "var(--font-mono), monospace").attr("font-size", 9.5)
+      .attr("fill", "#c9c3b6").attr("paint-order", "stroke")
+      .attr("stroke", "#090d16").attr("stroke-width", 3).attr("stroke-linejoin", "round")
+      .attr("pointer-events", "none")
+      .text((n) => n.name);
 
     refs.current.svg.on("click", () => useViz.getState().set("selected", null));
 
@@ -333,6 +388,17 @@ export default function GraphCanvas() {
     const ty = (rect.height - k * (y0 + y1)) / 2;
     refs.current.svg.transition().duration(dur).call(
       refs.current.zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(k)
+    );
+  }
+
+  // fly the camera to a node so a selected/searched contributor is never off-screen
+  function recenter(id: string) {
+    const n = refs.current.byId?.get(id);
+    if (!n || n.x == null || n.y == null) return;
+    const s = svgRef.current!.getBoundingClientRect();
+    refs.current.svg.transition().duration(700).ease(d3.easeCubicInOut).call(
+      refs.current.zoom.transform,
+      d3.zoomIdentity.translate(s.width / 2, s.height / 2).scale(1.7).translate(-n.x, -n.y)
     );
   }
 

@@ -12,8 +12,10 @@ type VizState = {
   sizeBy: SizeBy;
   sizeScale: number;
   minWeight: number;
+  cleanMinWeight: number;
   showBots: boolean;
   playing: boolean;
+  story: boolean;
   selected: string | null;
   hovered: string | null;
 
@@ -32,8 +34,10 @@ export const useViz = create<VizState>((setState, get) => ({
   sizeBy: "commits",
   sizeScale: 1,
   minWeight: 1,
+  cleanMinWeight: 1,
   showBots: false,
   playing: false,
+  story: true,
   selected: null,
   hovered: null,
 
@@ -45,15 +49,15 @@ export const useViz = create<VizState>((setState, get) => ({
       l.s = l.source;
       l.t = l.target;
     }
-    // open CLEAN, not as a hairball: default tie-strength so only the strongest
-    // ~60 collaborations show (that auto-limits to a well-spaced ~40-50 people).
-    // The sliders let you reveal the full dense network from there.
-    let minWeight = 1;
+    // "clean" explore threshold: only the strongest ~60 ties (well-spaced ~40-50
+    // people). Story mode instead opens LOW so ties appear as they form and the
+    // decade visibly assembles; "explore" then snaps to the clean threshold.
+    let cleanMinWeight = 1;
     if (data.links.length > 70) {
       const sorted = [...data.links].sort((a, b) => b.weight - a.weight);
-      minWeight = Math.max(2, sorted[60].weight);
+      cleanMinWeight = Math.max(2, sorted[60].weight);
     }
-    setState({ data, month: data.meta.n_months - 1, minWeight });
+    setState({ data, month: 0, minWeight: 2, cleanMinWeight, story: true, playing: true });
   },
   set: (k, v) => setState({ [k]: v } as Partial<VizState>),
   setMonth: (m) => setState({ month: m }),

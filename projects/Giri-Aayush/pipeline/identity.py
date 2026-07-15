@@ -127,8 +127,10 @@ class IdentityResolver:
             else:
                 self._by_email[nemail] = tok
 
-        # Only merge on name when it is specific enough to be trustworthy.
-        if nname and nname not in _GENERIC_NAMES and len(nname) > 2:
+        # Merge on name only when it's specific enough to trust across thousands of
+        # contributors: require a full "First Last" (a space) and real length, so a
+        # shared common first name ("alex", "chris") can't fuse distinct people.
+        if nname and nname not in _GENERIC_NAMES and " " in nname and len(nname) > 5:
             if nname in self._by_name:
                 self._uf.union(tok, self._by_name[nname])
             else:

@@ -8,6 +8,7 @@ import StatsBar from "@/components/StatsBar";
 import ControlPanel from "@/components/ControlPanel";
 import Timeline from "@/components/Timeline";
 import Tooltip from "@/components/Tooltip";
+import StoryCaption from "@/components/StoryCaption";
 
 // cinematic rise-and-unblur, spring-settled
 const rise = (dir: "left" | "top" | "bottom", delay: number) => ({
@@ -101,6 +102,7 @@ export default function Home() {
         )}
       </AnimatePresence>
 
+      <StoryCaption />
       <Tooltip />
     </main>
   );
