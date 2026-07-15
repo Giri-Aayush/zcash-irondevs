@@ -2,6 +2,8 @@
 
 > An animated, time-sliceable map of everyone who built Zcash and who they built it with. A decade of commits, assembled into a living network, in the browser.
 
+**Live demo: [ten-years-of-zcash.netlify.app](https://ten-years-of-zcash.netlify.app)** (the committed seed data, no install needed)
+
 ![The Zcash co-authorship network](docs/hero.png)
 
 *The decade replaying, from the founding team to the Ironwood-era ecosystem:*
