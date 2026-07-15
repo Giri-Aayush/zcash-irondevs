@@ -34,6 +34,15 @@ export default function GraphCanvas() {
     const sheen = defs.append("radialGradient").attr("id", "sheen").attr("cx", "34%").attr("cy", "28%").attr("r", "62%");
     sheen.append("stop").attr("offset", "0%").attr("stop-color", "#ffffff").attr("stop-opacity", 0.5);
     sheen.append("stop").attr("offset", "100%").attr("stop-color", "#ffffff").attr("stop-opacity", 0);
+    // muted navy "background sea" bubble
+    const mut = defs.append("radialGradient").attr("id", "muted").attr("cx", "36%").attr("cy", "30%").attr("r", "75%");
+    mut.append("stop").attr("offset", "0%").attr("stop-color", "#28324c");
+    mut.append("stop").attr("offset", "60%").attr("stop-color", "#151b2b");
+    mut.append("stop").attr("offset", "100%").attr("stop-color", "#0b1019");
+    // arrowhead for strong ties
+    const marker = defs.append("marker").attr("id", "arrow").attr("viewBox", "0 0 10 10")
+      .attr("refX", 8).attr("refY", 5).attr("markerWidth", 5).attr("markerHeight", 5).attr("orient", "auto");
+    marker.append("path").attr("d", "M0,1 L9,5 L0,9").attr("fill", "none").attr("stroke", "#8792b5").attr("stroke-width", 1.4);
     const zoomG = svg.append("g");
     const gLink = zoomG.append("g").attr("stroke", "#4a5573");
     const gNode = zoomG.append("g");
@@ -58,11 +67,16 @@ export default function GraphCanvas() {
       .force("x", d3.forceX(rect.width / 2).strength(0.012))
       .force("y", d3.forceY(rect.height / 2).strength(0.012))
       .on("tick", () => {
-        gLink.selectAll<SVGLineElement, GLink>("line")
-          .attr("x1", (l) => byId.get(l.s!)!.x!)
-          .attr("y1", (l) => byId.get(l.s!)!.y!)
-          .attr("x2", (l) => byId.get(l.t!)!.x!)
-          .attr("y2", (l) => byId.get(l.t!)!.y!);
+        gLink.selectAll<SVGLineElement, GLink>("line").each(function (l) {
+          const a = byId.get(l.s!)!, b = byId.get(l.t!)!;
+          const dx = b.x! - a.x!, dy = b.y! - a.y!, len = Math.hypot(dx, dy) || 1;
+          const ux = dx / len, uy = dy / len;
+          const line = this as SVGLineElement;
+          line.setAttribute("x1", String(a.x! + ux * ((a.r || 4) + 2)));
+          line.setAttribute("y1", String(a.y! + uy * ((a.r || 4) + 2)));
+          line.setAttribute("x2", String(b.x! - ux * ((b.r || 4) + 7)));
+          line.setAttribute("y2", String(b.y! - uy * ((b.r || 4) + 7)));
+        });
         gNode.selectAll<SVGGElement, GNode>("g.node").attr("transform", (n) => `translate(${n.x},${n.y})`);
         // fit once the layout has actually settled (not mid-explosion)
         if (!refs.current.didFit && simulation.alpha() < 0.06) {
@@ -151,8 +165,8 @@ export default function GraphCanvas() {
       degree.set(l.s!, (degree.get(l.s!) || 0) + 1);
       degree.set(l.t!, (degree.get(l.t!) || 0) + 1);
     }
-    const outNodes = st.minWeight > 1 ? nodes.filter((n) => (degree.get(n.id) || 0) > 0) : nodes;
-    return { nodes: outNodes, links, nodeC, degree };
+    // keep everyone: connected people are vivid, the rest form a muted background sea
+    return { nodes, links, nodeC, degree };
   }
 
   function update() {
@@ -163,10 +177,12 @@ export default function GraphCanvas() {
     const color = (n: GNode) => model.color(n);
 
     const val = (n: GNode) => nodeC.get(n.id) || 0;
-    // bigger, more prominent bubbles (like the reference); range widens when few nodes
-    const hi = nodes.length <= 70 ? 44 : 26;
-    const rScale = d3.scaleSqrt().domain([0, d3.max(nodes, val) || 1]).range([7, hi]);
     const scale = st.sizeScale;
+    // dramatic size for connected "whale" contributors; muted sea stays small
+    const connMax = d3.max(nodes.filter((n) => (degree.get(n.id) || 0) > 0), val) || 1;
+    const rConn = d3.scaleSqrt().domain([0, connMax]).range([13, 46]);
+    const rMuted = d3.scaleSqrt().domain([0, d3.max(nodes, val) || 1]).range([3.5, 9]);
+    const radius = (n: GNode) => ((degree.get(n.id) || 0) > 0 ? rConn(val(n)) : rMuted(val(n))) * scale;
 
     const rect = svgRef.current!.getBoundingClientRect();
     const prev = new Set(sim.current!.nodes().map((n) => n.id));
@@ -177,18 +193,19 @@ export default function GraphCanvas() {
     }
     for (const n of nodes) {
       if (n.x == null) { n.x = rect.width / 2 + (Math.random() - 0.5) * 80; n.y = rect.height / 2 + (Math.random() - 0.5) * 80; }
-      n.r = rScale(val(n)) * scale;
+      n.deg = degree.get(n.id) || 0;
+      n.r = radius(n);
       if (!prev.has(n.id)) added++;
     }
 
     gLink.selectAll<SVGLineElement, GLink>("line")
       .data(links, (l: any) => l.s + "|" + l.t)
       .join(
-        (enter: any) => enter.append("line").attr("class", "link").attr("stroke-opacity", 0.5),
+        (enter: any) => enter.append("line").attr("class", "link").attr("marker-end", "url(#arrow)"),
         (u: any) => u,
         (exit: any) => exit.remove()
       )
-      .attr("stroke-opacity", 0.32)
+      .attr("stroke-opacity", 0.34)
       .attr("stroke-width", (l: GLink) => Math.min(2.4, 0.35 + Math.sqrt(l.w!) * 0.4));
 
     const nodeSel = gNode.selectAll<SVGGElement, GNode>("g.node")
@@ -208,23 +225,24 @@ export default function GraphCanvas() {
         (u: any) => u,
         (exit: any) => exit.remove()
       );
+    const conn = (n: GNode) => (n.deg || 0) > 0;
     nodeSel.select("circle.halo")
       .attr("r", (n: GNode) => n.r! * 2.1)
       .attr("fill", (n: GNode) => grads(color(n)).glow)
-      .attr("opacity", (n: GNode) => (n.is_bot ? 0.25 : 0.9));
+      .attr("opacity", (n: GNode) => (conn(n) ? (n.is_bot ? 0.3 : 0.95) : 0)); // muted sea has no glow
     nodeSel.select("circle.body")
       .attr("r", (n: GNode) => n.r!)
-      .attr("fill", (n: GNode) => (n.avatar ? avatarFill(n) : grads(color(n)).sphere))
-      .attr("fill-opacity", (n: GNode) => (n.is_bot ? 0.45 : 1))
-      .attr("stroke", (n: GNode) => color(n))
-      .attr("stroke-opacity", 0.95)
-      .attr("stroke-width", (n: GNode) => Math.max(1.4, n.r! * 0.14));
+      .attr("fill", (n: GNode) => (!conn(n) ? "url(#muted)" : n.avatar ? avatarFill(n) : grads(color(n)).sphere))
+      .attr("fill-opacity", (n: GNode) => (!conn(n) ? 0.5 : n.is_bot ? 0.5 : 1))
+      .attr("stroke", (n: GNode) => (conn(n) ? color(n) : "#2b3450"))
+      .attr("stroke-opacity", (n: GNode) => (conn(n) ? 0.95 : 0.5))
+      .attr("stroke-width", (n: GNode) => (conn(n) ? Math.max(1.6, n.r! * 0.13) : 1));
     nodeSel.select("circle.sheen")
       .attr("r", (n: GNode) => n.r! * 0.86)
       .attr("cx", (n: GNode) => -n.r! * 0.12)
       .attr("cy", (n: GNode) => -n.r! * 0.14)
       .attr("fill", "url(#sheen)")
-      .attr("opacity", (n: GNode) => (n.avatar ? 0.16 : 0.5));
+      .attr("opacity", (n: GNode) => (!conn(n) ? 0.35 : n.avatar ? 0.16 : 0.5));
 
     refs.current.svg.on("click", () => useViz.getState().set("selected", null));
 
@@ -280,16 +298,19 @@ export default function GraphCanvas() {
   }
 
   function fitView(dur = 600) {
-    const nodes = sim.current!.nodes().filter((n) => n.x != null);
+    const all = sim.current!.nodes().filter((n) => n.x != null);
+    // frame the connected core; the muted background sea spills past the edges
+    const conn = all.filter((n) => (n.deg || 0) > 0);
+    const nodes = conn.length >= 3 ? conn : all;
     if (!nodes.length) return;
     const xs = nodes.map((n) => n.x!).sort(d3.ascending);
     const ys = nodes.map((n) => n.y!).sort(d3.ascending);
-    const pad = 40;
-    // frame the dense core (5th–95th pct) so a few antenna nodes don't shrink it
+    const maxR = d3.max(nodes, (n) => n.r || 8) || 8;
+    const pad = 40 + maxR; // don't clip big whale bubbles at the edges
     const x0 = d3.quantileSorted(xs, 0.05)! - pad, x1 = d3.quantileSorted(xs, 0.95)! + pad;
     const y0 = d3.quantileSorted(ys, 0.05)! - pad, y1 = d3.quantileSorted(ys, 0.95)! + pad;
     const rect = svgRef.current!.getBoundingClientRect();
-    const k = Math.max(0.3, Math.min(3, 0.82 * Math.min(rect.width / (x1 - x0), rect.height / (y1 - y0))));
+    const k = Math.max(0.3, Math.min(3, 0.68 * Math.min(rect.width / (x1 - x0), rect.height / (y1 - y0))));
     const tx = (rect.width - k * (x0 + x1)) / 2;
     const ty = (rect.height - k * (y0 + y1)) / 2;
     refs.current.svg.transition().duration(dur).call(

@@ -21,6 +21,7 @@ export type GNode = {
   fx?: number | null;
   fy?: number | null;
   r?: number;
+  deg?: number;
 };
 
 export type GLink = {
