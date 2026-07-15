@@ -33,6 +33,7 @@ _BOT_PATTERNS = (
     "[bot]",
     "actions-user",
     "web-flow", # GitHub's merge-commit committer
+    "copilot",  # Copilot Autofix / coding-agent commits
 )
 
 # Names too generic to be a reliable merge key on their own.

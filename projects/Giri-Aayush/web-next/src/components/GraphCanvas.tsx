@@ -22,6 +22,8 @@ type Refs = {
   zoom: d3.ZoomBehavior<SVGSVGElement, unknown>;
   byId: Map<string, GNode>;
   patterns: Set<string>;
+  dragging: Set<string>; // node ids mid-gesture, so stale pins can be cleared
+  dragB: d3.DragBehavior<SVGGElement, GNode, GNode | d3.SubjectPosition>;
   didFit?: boolean;
   fitView?: (d?: number) => void;
 };
@@ -78,9 +80,10 @@ export default function GraphCanvas() {
       .velocityDecay(compact ? 0.62 : 0.46) // lighter damping = more bounce; distanceMax caps still tame the spiral
       .force("charge", d3.forceManyBody().strength(compact ? -260 : -430).distanceMax(compact ? 280 : 420))
       .force("link", d3.forceLink<GNode, GLink>().id((d: any) => d.id)
-        .distance((l: any) => (compact ? 76 : 100) / Math.sqrt(l.w || 1)).strength(compact ? 0.22 : 0.34)) // tight, springy ties
+        .distance((l: any) => (compact ? 76 : 100) / Math.sqrt(l.w || 1)).strength(compact ? 0.22 : 0.34)
+        .iterations(2)) // tight, springy ties; 2 passes converge instead of oscillating
       .force("center", d3.forceCenter(rect.width / 2, rect.height / 2))
-      .force("collide", d3.forceCollide<GNode>().radius((d) => (d.r || 4) + (compact ? 8 : 12)).strength(0.9))
+      .force("collide", d3.forceCollide<GNode>().radius((d) => (d.r || 4) + (compact ? 8 : 12)).strength(0.8).iterations(2))
       .force("x", d3.forceX(rect.width / 2).strength(compact ? 0.05 : 0.03))
       .force("y", d3.forceY(rect.height / 2).strength(compact ? 0.05 : 0.03))
       .on("tick", () => {
@@ -103,7 +106,16 @@ export default function GraphCanvas() {
       });
     sim.current = simulation;
 
-    refs.current = { svg, defs, zoomG, gLink, gNode, zoom, byId, patterns: new Set<string>() };
+    refs.current = {
+      svg, defs, zoomG, gLink, gNode, zoom, byId,
+      patterns: new Set<string>(),
+      dragging: new Set<string>(),
+      // ONE shared drag behavior: d3-drag's gesture registry (e.active) only
+      // coordinates within a single instance, so per-enter-batch instances
+      // would break multi-touch damping restore
+      dragB: null as unknown as Refs["dragB"],
+    };
+    refs.current.dragB = makeDrag();
 
     let resizeT: ReturnType<typeof setTimeout>;
     const onResize = () => {
@@ -112,7 +124,11 @@ export default function GraphCanvas() {
       simulation.force("center", d3.forceCenter(r.width / 2, r.height / 2));
       simulation.alpha(0.2).restart();
       clearTimeout(resizeT);
-      resizeT = setTimeout(() => fitView(500), 260); // re-frame after the layout re-settles
+      resizeT = setTimeout(() => {
+        // a selection recenter must win over the resize re-frame (mobile keyboard open/close)
+        const sel = useViz.getState().selected;
+        if (sel) recenter(sel); else fitView(500);
+      }, 260); // re-frame after the layout re-settles
     };
     window.addEventListener("resize", onResize);
 
@@ -242,6 +258,8 @@ export default function GraphCanvas() {
     }
     for (const n of nodes) {
       if (n.x == null) { n.x = rect.width / 2 + (Math.random() - 0.5) * 80; n.y = rect.height / 2 + (Math.random() - 0.5) * 80; }
+      // a lost touchend must never leave a node pinned forever
+      if (n.fx != null && !refs.current.dragging.has(n.id)) { n.fx = null; n.fy = null; }
       n.deg = degree.get(n.id) || 0;
       n.r = radius(n);
       if (!prev.has(n.id)) added++;
@@ -266,7 +284,7 @@ export default function GraphCanvas() {
           g.append("circle").attr("class", "halo").attr("pointer-events", "none").attr("r", 0);  // colored glow
           g.append("circle").attr("class", "body").attr("r", 0);                                  // sphere / avatar
           g.append("circle").attr("class", "sheen").attr("pointer-events", "none").attr("r", 0);   // glossy highlight
-          g.call(drag());
+          g.call(refs.current.dragB);
           g.transition().duration(600).ease(d3.easeCubicOut).style("opacity", 1); // fade in
           g.on("mouseenter", function (this: any, _e: any, n: GNode) {
             useViz.getState().set("hovered", n.id);
@@ -361,6 +379,7 @@ export default function GraphCanvas() {
     const cm = buildColorModel(data!.nodes, useViz.getState().colorBy);
     if (!id) {
       gNode.selectAll<SVGGElement, GNode>("g.node").style("opacity", 1);
+      gNode.selectAll("text.whale").style("display", null);
       gNode.selectAll<SVGCircleElement, GNode>("circle.body")
         .attr("stroke", (n) => cm.color(n)).attr("stroke-opacity", 0.95)
         .attr("stroke-width", (n) => Math.max(1.4, n.r! * 0.14));
@@ -381,6 +400,8 @@ export default function GraphCanvas() {
     gLink.selectAll<SVGLineElement, GLink>("line").attr("stroke-opacity", (l) => (l.s === id || l.t === id ? 0.6 : 0.03));
     const top = [...w.entries()].sort((a, b) => b[1] - a[1]).slice(0, 12).map((d) => d[0]);
     const labels = new Set(top); labels.add(id);
+    // hide the resting whale labels for anyone getting a focus label, no doubles
+    gNode.selectAll<SVGTextElement, GNode>("text.whale").style("display", (n) => (labels.has(n.id) ? "none" : null));
     gNode.selectAll<SVGGElement, GNode>("g.node").filter((n) => labels.has(n.id))
       .append("text").attr("class", "lbl")
       .attr("x", (n) => n.r! + 4).attr("y", 3)
@@ -389,17 +410,39 @@ export default function GraphCanvas() {
       .text((n) => n.name);
   }
 
-  function drag() {
+  function makeDrag() {
+    const compact = () => (svgRef.current?.getBoundingClientRect().width ?? 1000) < 640;
     return d3.drag<SVGGElement, GNode>()
+      .clickDistance(4) // finger jitter on a tap still selects, never counts as a drag
       .on("start", (e, d) => {
         if (useViz.getState().playing) useViz.getState().set("playing", false); // interacting ends the auto-play
-        // small screens get a gentler reheat: the whole graph is within arm's reach
-        const gentle = (svgRef.current?.getBoundingClientRect().width ?? 1000) < 640;
-        if (!e.active) sim.current!.alphaTarget(gentle ? 0.06 : 0.15).restart(); // snappy grab, springs stay responsive
+        // energy-follows-input: no alphaTarget pump. Each pointer move injects
+        // an alpha pulse scaled by pointer speed; hold still and the network
+        // decays to true rest within a second, held node pinned to the pointer.
+        d.dragDist = 0;
+        refs.current.dragging.add(d.id);
+        sim.current?.velocityDecay(compact() ? 0.66 : 0.6).alphaTarget(0); // viscous while interacting
         d.fx = d.x; d.fy = d.y;
       })
-      .on("drag", (e, d) => { d.fx = e.x; d.fy = e.y; })
-      .on("end", (e, d) => { if (!e.active) sim.current!.alphaTarget(0); d.fx = null; d.fy = null; });
+      .on("drag", (e, d) => {
+        d.dragDist = (d.dragDist || 0) + Math.hypot(e.dx, e.dy);
+        d.fx = e.x; d.fy = e.y;
+        const s = sim.current;
+        if (!s) return;
+        // slow ASMR strokes idle at 0.09; fast flicks pump harder so neighbors stay attached
+        const pulse = Math.min(0.26, 0.09 + Math.hypot(e.dx, e.dy) * 0.01);
+        if (s.alpha() < pulse) s.alpha(pulse);
+        s.restart();
+      })
+      .on("end", (e, d) => {
+        refs.current.dragging.delete(d.id);
+        if (!e.active && sim.current) {
+          sim.current.velocityDecay(compact() ? 0.62 : 0.46); // restore the resting spring
+          // a real drag gets a gentle spring-back on release; a plain click stays still
+          if ((d.dragDist || 0) > 3) sim.current.alpha(Math.max(sim.current.alpha(), 0.1)).restart();
+        }
+        d.fx = null; d.fy = null;
+      });
   }
 
   function fitView(dur = 600) {

@@ -22,6 +22,7 @@ export type GNode = {
   fy?: number | null;
   r?: number;
   deg?: number;
+  dragDist?: number; // accumulated pointer travel of the current drag gesture
 };
 
 export type GLink = {
