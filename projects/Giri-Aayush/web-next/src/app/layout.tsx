@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Space_Grotesk, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -24,17 +25,14 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${display.variable} ${mono.variable} h-full antialiased`}>
-      <head>
+    <html lang="en" suppressHydrationWarning className={`${display.variable} ${mono.variable} h-full antialiased`}>
+      <body className="h-full overflow-hidden">
         {/* apply a saved theme before paint so light mode never flashes dark */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html:
-              "try{var t=localStorage.getItem('ironwood-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}catch(e){}",
-          }}
-        />
-      </head>
-      <body className="h-full overflow-hidden">{children}</body>
+        <Script id="theme-init" strategy="beforeInteractive">
+          {`try{var t=localStorage.getItem('ironwood-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}catch(e){}`}
+        </Script>
+        {children}
+      </body>
     </html>
   );
 }

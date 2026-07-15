@@ -67,7 +67,7 @@
   --glass-shadow: rgba(0, 0, 0, 0.8);
 
   /* graph ink (SVG links + labels) */
-  --graph-link: #4a5573;
+  --graph-link: #5c6a92;
   --graph-ink: #c9c3b6;         /* resting node labels */
   --graph-ink-strong: #ede7dc;  /* focused label */
   --graph-ink-halo: #090d16;    /* label outline = canvas */
@@ -77,14 +77,14 @@
   --ambient-2: rgba(244, 183, 40, 0.05);
 }
 
-/* ── daylight: a clean, paper-bright control surface ── */
+/* ── daylight: a muted slate control surface, not a blank page ── */
 :root[data-theme="light"] {
-  --canvas: #eceef3;
-  --gold: #b5820f;
-  --hairline: rgba(15, 23, 42, 0.08);
+  --canvas: #d4d9e3;
+  --gold: #a5760c;
+  --hairline: rgba(15, 23, 42, 0.1);
 
-  --background: #eceef3;
-  --foreground: #14181f;
+  --background: #d4d9e3;
+  --foreground: #10141c;
   --card: rgba(255, 255, 255, 0.85);
   --card-foreground: #14181f;
   --popover: #ffffff;
@@ -106,11 +106,11 @@
   --glass-highlight: rgba(255, 255, 255, 0.9);
   --glass-shadow: rgba(30, 41, 79, 0.18);
 
-  --graph-link: #9aa6c2;
-  --graph-ink: #3a4256;
-  --graph-ink-strong: #14181f;
-  --graph-ink-halo: #f4f6fa;
-  --grid-line: rgba(40, 60, 110, 0.07);
+  --graph-link: #45516f;
+  --graph-ink: #2b3346;
+  --graph-ink-strong: #10141c;
+  --graph-ink-halo: #dfe4ee;
+  --grid-line: rgba(40, 60, 110, 0.09);
 
   --ambient-1: rgba(90, 120, 200, 0.07);
   --ambient-2: rgba(181, 130, 15, 0.04);
@@ -174,8 +174,8 @@
 }
 
 /* ties flow like the monitoring-map arcs (calm, slow) */
-@keyframes flowDash { to { stroke-dashoffset: -16; } }
-.link { stroke: var(--graph-link); stroke-dasharray: 2 7; animation: flowDash 2.1s linear infinite; }
+@keyframes flowDash { to { stroke-dashoffset: -18; } }
+.link { stroke: var(--graph-link); stroke-dasharray: 6 3; animation: flowDash 2.4s linear infinite; }
 
 /* node labels read their ink + halo from the theme, so a toggle re-colors them live */
 text.whale { fill: var(--graph-ink); stroke: var(--graph-ink-halo); }
