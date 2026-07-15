@@ -48,9 +48,16 @@ The Ironwood activation on mainnet (block 3,428,143): around July 28th at 1pm UT
 
 ## Starting data
 
-All Zcash core code repositories from official mantainers and an opinionated selection of best repos from the broader community. You can find them on https://codez.ombie.cash (GitHub mirror). Locally I have a folder on disk with all bare repositories: `data/<orgs>/<repos.git>` (bare repos, no staging area).
+All Zcash core code repositories from official mantainers and an opinionated selection of best repos from the broader community. You can find them on https://codez.ombie.cash (GitHub mirror). Locally I have a folder on disk with all bare repositories: `data/<orgs>/<repos.git>` (bare repos, no staging area). Here is the [full list](https://codez.ombie.cash/assets/data/repositories.dat).
 
-You can reproduce it cloning a bunch of repositories in the `data` folder, ie. `git clone --bare https://github.com/ZcashFoundation/zebra.git data/ZcashFoundation/zebra.git`. You can use the provided `init.sh` script.
+Some metrics:
+- 28 owners (organizations or individuals)
+- 536 repositories
+- 20G on disk (git history only)
+
+I can't share a snapshot of the full archive, so my suggestion is to develop against a limited local archive and then leave me the burden of running the project on the complete archive.
+
+You can reproduce it cloning a bunch of repositories in the `data` folder, ie. `git clone --bare https://github.com/ZcashFoundation/zebra.git data/ZcashFoundation/zebra.git`. You can use the provided `init.sh` script (random sample from the list above).
 
 ## Submitting a project
 
