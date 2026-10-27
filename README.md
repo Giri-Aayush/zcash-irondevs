@@ -11,12 +11,11 @@ The final goal of this contest is to give a gift to the heroic [Zcash](https://z
 A prize of 1 $ZEC for the best project of data storytelling and visualization based on the open source code base related to Zcash.
 Discover it on [CodeZ](https://codez.ombie.cash).
 
-One deliverable: the **dynamic co-authorship network** (projection of bipartite network of authors and repositories) of Zcash ecosystem with animated and interactive visualizations.
-
 Deadline is the Ironwood activation on mainnet (block 3,428,143): around July 28th at 1pm UTC.
 
 In [CONTRIBUTING.md](https://github.com/jenkin/zcash-irondevs/blob/main/CONTRIBUTING.md) you can find all details to participate.
-Feel free to [open an issue](https://github.com/jenkin/zcash-irondevs/issues/new) if you have any questions.
+If you have questions, please read the [FAQ](https://github.com/jenkin/zcash-irondevs/blob/main/FAQ.md) in advance,
+then feel free to [open an issue](https://github.com/jenkin/zcash-irondevs/issues/new) if you need further informations.
 
 ## License
 
